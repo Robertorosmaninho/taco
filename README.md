@@ -29,7 +29,17 @@ TL;DR build taco using CMake. Run `make test`.
 # Build and test
 ![Build and Test](https://github.com/RSenApps/taco/workflows/Build%20and%20Test/badge.svg?branch=master)
 
-Build taco using CMake 2.8.12 or greater:
+## Dependencies
+- CMake 2.8.12 or greater
+- GNU Make 4.2.1 or greater
+- conda 4.8.2 or greater
+
+## Create and activate conda environment:
+
+    conda env create -f .conda/environment.yml
+    conda activate taco
+
+## Build taco:
 
     cd <taco-directory>
     mkdir build
@@ -172,6 +182,12 @@ the same effect:
 
     Options:
       ...
+
+## Deactivate
+To deactivate conda environment after using taco just use the following 
+command: 
+
+    conda deactivate taco
 
 For more information, see our paper on the taco tools
 [taco: A Tool to Generate Tensor Algebra Kernels](http://tensor-compiler.org/kjolstad-ase17-tools.pdf).
