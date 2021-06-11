@@ -29,6 +29,7 @@ TL;DR build taco using CMake. Run `make test`.
 # Build and test
 ![Build and Test](https://github.com/RSenApps/taco/workflows/Build%20and%20Test/badge.svg?branch=master)
 
+<<<<<<< HEAD
 ## Dependencies
 - CMake 2.8.12 or greater
 - GNU Make 4.2.1 or greater
@@ -40,6 +41,9 @@ TL;DR build taco using CMake. Run `make test`.
     conda activate taco
 
 ## Build taco:
+=======
+Build taco using CMake 3.4.0 or greater:
+>>>>>>> 5cb1314708ca4a5cb58b21b2729dd333dcc366a4
 
     cd <taco-directory>
     mkdir build
