@@ -30,13 +30,12 @@ TL;DR build taco using CMake. Run `make test`.
 ![Build and Test](https://github.com/RSenApps/taco/workflows/Build%20and%20Test/badge.svg?branch=master)
 
 ## Dependencies
-- CMake 2.8.12 or greater
-- GNU Make 4.2.1 or greater
 - conda 4.8.2 or greater
+- LLVM 11
 
 ## Create and activate conda environment:
 
-    conda env create -f .conda/environment.yml
+    conda env create -f /path/to/taco/.conda/environment.yml
     conda activate taco
 
 ## Build taco:
