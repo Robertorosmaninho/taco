@@ -29,7 +29,16 @@ TL;DR build taco using CMake. Run `make test`.
 # Build and test
 ![Build and Test](https://github.com/RSenApps/taco/workflows/Build%20and%20Test/badge.svg?branch=master)
 
-Build taco using CMake 3.4.0 or greater:
+## Dependencies
+- conda 4.8.2 or greater
+- LLVM 11
+
+## Create and activate conda environment:
+
+    conda env create -f /path/to/taco/.conda/environment.yml
+    conda activate taco
+
+## Build taco:
 
     cd <taco-directory>
     mkdir build
@@ -84,7 +93,7 @@ To build taco for LLVM, add `-DLLVM=ON` to the cmake line above. For example:
 
     cmake -DCMAKE_BUILD_TYPE=Release -DLLVM=ON ..
 
-Make sure you have LLVM properly installed. 
+Make sure you have LLVM properly installed.
 
 ## Running tests
 To run all tests:
@@ -185,6 +194,12 @@ the same effect:
 
     Options:
       ...
+
+## Deactivate
+To deactivate conda environment after using taco just use the following
+command:
+
+    conda deactivate taco
 
 For more information, see our paper on the taco tools
 [taco: A Tool to Generate Tensor Algebra Kernels](http://tensor-compiler.org/kjolstad-ase17-tools.pdf).
