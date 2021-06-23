@@ -4,6 +4,7 @@
 
 #include "codegen.h"
 #include "codegen_c.h"
+#include "taco/target.h"
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/GlobalValue.h>
 #include <llvm/IR/IRBuilder.h>
@@ -20,6 +21,7 @@ namespace taco
       // LLVM stuff
       llvm::IRBuilder<> *Builder = nullptr;
       llvm::LLVMContext Context;
+      std::unique_ptr<llvm::Module> M;
       llvm::Function *F = nullptr;
 
       // Symbol Table
@@ -28,6 +30,8 @@ namespace taco
       OutputKind outputKind;
       class FindVars;
 
+      Target target;
+
       llvm::StructType *tensorType;
       llvm::PointerType *tensorTypePtr;
       llvm::Value *value; // last llvm value generated
@@ -35,8 +39,8 @@ namespace taco
       int64_t indent = 0;
 
     public:
-      CodeGen_LLVM(std::ostream &stream, OutputKind kind)
-          : CodeGen(stream, LLVM), outputKind(kind){};
+      CodeGen_LLVM(std::ostream &stream, OutputKind kind, Target target)
+          : CodeGen(stream, LLVM), outputKind(kind), target(target) {};
       void compile(Stmt stmt, bool isFirst = false) override;
 
     protected:

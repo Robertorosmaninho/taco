@@ -1,6 +1,11 @@
 #ifdef HAVE_LLVM
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Target/TargetMachine.h"
+#include "taco/target.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/InstVisitor.h"
+#include "llvm/IR/Instructions.h"
 
 #include "codegen_llvm.h"
 #include "taco/util/print.h"
@@ -146,6 +151,9 @@ llvm::Type *CodeGen_LLVM::llvmTypeOf(Datatype t) {
 }
 
 void CodeGen_LLVM::compile(Stmt stmt, bool isFirst) {
+  auto _ = CodeGen_LLVM::IndentHelper(this, "Aqui começa a compilação!");
+  M = std::make_unique<llvm::Module>("taco module", this->Context);
+
   init_codegen();
   stmt.accept(this);
 }
@@ -498,8 +506,6 @@ void CodeGen_LLVM::visit(const Function *func) {
     This method creates a function. By calling convention, the function
     returns 0 on success or 1 otherwise.
   */
-
-  auto M = std::make_unique<llvm::Module>("my compiler", this->Context);
 
   // 1. find the arguments to @func
   FindVars varFinder(func->inputs, func->outputs, this);

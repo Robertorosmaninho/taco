@@ -65,6 +65,9 @@ public:
   
   /// Set the source of the module
   void setSource(std::string source);
+
+  /// Get the target of the environment
+   Target getTarget();
   
 private:
   std::stringstream source;

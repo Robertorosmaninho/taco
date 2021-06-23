@@ -6,6 +6,7 @@
 
 #ifdef HAVE_LLVM
 #include "codegen_llvm.h"
+#include "taco/codegen/module.h"
 #endif
 
 #include <algorithm>
@@ -29,12 +30,13 @@ const std::string labelPrefix = "resume_";
 
 
 shared_ptr<CodeGen> CodeGen::init_default(std::ostream &dest, OutputKind outputKind) {
+  auto module = Module();
   if (should_use_CUDA_codegen()) {
     return make_shared<CodeGen_CUDA>(dest, outputKind);
   }
   #ifdef HAVE_LLVM
   else if (should_use_LLVM_codegen()){
-    return make_shared<CodeGen_LLVM>(dest, outputKind);
+    return make_shared<CodeGen_LLVM>(dest, outputKind, module.getTarget());
   }
   #endif
   else {

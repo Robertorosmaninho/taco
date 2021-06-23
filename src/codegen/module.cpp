@@ -44,6 +44,10 @@ void Module::addFunction(Stmt func) {
   funcs.push_back(func);
 }
 
+Target Module::getTarget() {
+  return target;
+}
+
 void Module::compileToSource(string path, string prefix) {
   if (!moduleFromUserSource) {
   
