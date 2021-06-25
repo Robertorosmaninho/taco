@@ -251,7 +251,12 @@ void CodeGen_LLVM::visit(const Add *op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Add");
   auto *a = codegen(op->a);
   auto *b = codegen(op->b);
-  value = this->Builder->CreateAdd(a, b);
+  if (op->type.isFloat()){
+    value = this->Builder->CreateFAdd(a, b);
+  }
+  else {
+    value = this->Builder->CreateAdd(a, b);
+  }
 }
 
 void CodeGen_LLVM::visit(const Sub *op) {
@@ -263,7 +268,12 @@ void CodeGen_LLVM::visit(const Mul *op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Mul");
   auto *a = codegen(op->a);
   auto *b = codegen(op->b);
-  value = this->Builder->CreateMul(a, b);
+  if (op->type.isFloat()){
+    value = this->Builder->CreateFMul(a, b);
+  }
+  else {
+    value = this->Builder->CreateMul(a, b);
+  }
 }
 
 void CodeGen_LLVM::visit(const Div *op) {
@@ -423,19 +433,19 @@ void CodeGen_LLVM::visit(const For *op) {
   auto phi =
       this->Builder->CreatePHI(start->getType(), 2 /* num values */, var->name);
   pushSymbol(var->name, phi);
-  this->Builder->CreateBr(body); // header -> body
 
-  // Compute increment
+  // Compute exit condition
+  auto cond = this->Builder->CreateICmpSLT(phi, end);
+  this->Builder->CreateCondBr(cond, body, exit);
+
+  // Compute increment and jump back to header
   this->Builder->SetInsertPoint(latch);
   auto incr = this->Builder->CreateAdd(phi, codegen(op->increment));
+  this->Builder->CreateBr(header);  // latch -> header
 
   // Add values to the PHI node
   phi->addIncoming(start, pre_header);
   phi->addIncoming(incr, latch);
-
-  // Compute exit condition
-  auto cond = this->Builder->CreateICmpSLT(phi, end);
-  this->Builder->CreateCondBr(cond, header, exit);
 
   // Connect body to latch
   this->Builder->SetInsertPoint(body);
@@ -499,7 +509,7 @@ void CodeGen_LLVM::visit(const Function *func) {
     returns 0 on success or 1 otherwise.
   */
 
-  auto M = std::make_unique<llvm::Module>("my compiler", this->Context);
+  auto M = std::make_unique<llvm::Module>("taco_module", this->Context);
 
   // 1. find the arguments to @func
   FindVars varFinder(func->inputs, func->outputs, this);
@@ -518,7 +528,7 @@ void CodeGen_LLVM::visit(const Function *func) {
   // 4. create a new function in the module with the given types
   this->F = llvm::Function::Create(llvm::FunctionType::get(i32, args, false),
                                    llvm::GlobalValue::ExternalLinkage,
-                                   "my function", M.get());
+                                   "compute", M.get());
 
   // 5. Create the first basic block
   this->Builder->SetInsertPoint(
@@ -556,7 +566,7 @@ void CodeGen_LLVM::visit(const Function *func) {
   // 9. Verify the created module
   llvm::verifyModule(*M, &llvm::errs());
 
-  PRINT(*M);
+  llvm::outs() << *M << "\n";
 }
 
 void CodeGen_LLVM::visit(const VarDecl *op) {
@@ -646,6 +656,7 @@ void CodeGen_LLVM::visit(const GetProperty *op) {
   llvm::Value *tensor = getSymbol(name);
 
   auto i32 = llvm::Type::getInt32Ty(this->Context);
+  auto f64pp = llvm::Type::getDoublePtrTy(this->Context)->getPointerTo();
 
   switch (op->property) {
   case TensorProperty::Dimension: {
@@ -658,7 +669,8 @@ void CodeGen_LLVM::visit(const GetProperty *op) {
   case TensorProperty::Values: {
     auto *vals = this->Builder->CreateStructGEP(
         tensor, (int)TensorProperty::Values, name + ".gep.vals");
-    value = this->Builder->CreateLoad(vals, name + ".vals");
+    auto val = this->Builder->CreateBitCast(vals, f64pp);  // cast vals to double*
+    value = this->Builder->CreateLoad(val, name + ".vals");  // val is an int8*
     break;
   }
   case TensorProperty::Order:
