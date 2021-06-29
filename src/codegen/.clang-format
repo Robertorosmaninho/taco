@@ -1,0 +1,14 @@
+---
+# See all possible options and defaults with:
+# clang-format --style=llvm --dump-config
+BasedOnStyle:  Chromium
+BinPackArguments: false
+BinPackParameters: false
+ColumnLimit:     99
+IndentWidth:     2
+BreakConstructorInitializers: BeforeComma
+IncludeBlocks:   Preserve
+SpaceAfterCStyleCast: true
+PointerAlignment: Right
+
+...

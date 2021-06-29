@@ -12,9 +12,11 @@
 #include "taco/error.h"
 #include "taco/util/strings.h"
 #include "taco/util/env.h"
+#include "taco/util/print.h"
 #include "codegen/codegen_c.h"
 #include "codegen/codegen_cuda.h"
 #include "taco/cuda.h"
+#include "taco/llvm.h"
 
 #ifdef HAVE_LLVM
 #include "codegen/codegen_llvm.h"
@@ -49,33 +51,54 @@ void Module::compileToSource(string path, string prefix) {
   
     // create a codegen instance and add all the funcs
     bool didGenRuntime = false;
-    
+
     header.str("");
     header.clear();
     source.str("");
     source.clear();
 
-    taco_tassert(target.arch == Target::C99) <<
-        "Only C99 codegen supported currently";
-    std::shared_ptr<CodeGen> sourcegen =
-        CodeGen::init_default(source, CodeGen::ImplementationGen);
-    std::shared_ptr<CodeGen> headergen =
-            CodeGen::init_default(header, CodeGen::HeaderGen);
+    if (target.arch == Target::C99 or !should_use_LLVM_codegen()) {
+      std::cout << "C99 codegen\n";
+      std::shared_ptr<CodeGen> sourcegen =
+          CodeGen::init_default(source, CodeGen::ImplementationGen);
+      std::shared_ptr<CodeGen> headergen =
+              CodeGen::init_default(header, CodeGen::HeaderGen);
 
-    for (auto func: funcs) {
-      sourcegen->compile(func, !didGenRuntime);
-      headergen->compile(func, !didGenRuntime);
-      didGenRuntime = true;
+      for (auto func: funcs) {
+        sourcegen->compile(func, !didGenRuntime);
+        headergen->compile(func, !didGenRuntime);
+        didGenRuntime = true;
+      }
+    }
+    else {
+      std::cout << "LLVM codegen\n";
+      // for any other arch we use LLVM
+      auto sourcegen = std::static_pointer_cast<CodeGen_LLVM>(
+        CodeGen::init_default(source, CodeGen::ImplementationGen));
+      auto headergen = CodeGen::init_default(header, CodeGen::HeaderGen);
+
+      for (auto func: funcs) {
+        sourcegen->compile(func, !didGenRuntime);
+        headergen->compile(func, !didGenRuntime);
+        didGenRuntime = true;
+      }
+
+      std::string bc_filename = path + prefix + ".bc";
+      std::cout << "bc_filename: " << bc_filename << "\n";
+      sourcegen->writeModuleToFile(bc_filename);
     }
   }
 
+  string file_ending;
   ofstream source_file;
-  string file_ending = should_use_CUDA_codegen() ? ".cu" : ".c";
+
+  file_ending = should_use_CUDA_codegen() ? ".cu" : ".c";
   source_file.open(path+prefix+file_ending);
   source_file << source.str();
   source_file.close();
-  
+
   ofstream header_file;
+  std::cout << "header file: " << path + prefix + ".h" << std::endl;
   header_file.open(path+prefix+".h");
   header_file << header.str();
   header_file.close();
@@ -84,7 +107,7 @@ void Module::compileToSource(string path, string prefix) {
 void Module::compileToStaticLibrary(string path, string prefix) {
   taco_tassert(false) << "Compiling to a static library is not supported";
 }
-  
+
 namespace {
 
 void writeShims(vector<Stmt> funcs, string path, string prefix) {
@@ -115,6 +138,9 @@ void writeShims(vector<Stmt> funcs, string path, string prefix) {
 string Module::compile() {
   string prefix = tmpdir+libname;
   string fullpath = prefix + ".so";
+
+  std::cout << "--==--==--\n";
+  std::cout << "should use LLVM codegen: " << should_use_LLVM_codegen() << "\n";
   
   string cc;
   string cflags;
@@ -127,6 +153,12 @@ string Module::compile() {
     file_ending = ".cu";
     shims_file = prefix + "_shims.cpp";
   }
+  else if (should_use_LLVM_codegen() && !moduleFromUserSource) {
+    cc = util::getFromEnv(target.compiler_env, target.compiler);
+    cflags = util::getFromEnv("TACO_CFLAGS", "-O3 -ffast-math") + " -shared -fPIC";
+    file_ending = ".o";
+    shims_file = prefix + ".c";  // little hack to compile C files together
+  }
   else {
     cc = util::getFromEnv(target.compiler_env, target.compiler);
     cflags = util::getFromEnv("TACO_CFLAGS",
@@ -137,7 +169,7 @@ string Module::compile() {
     file_ending = ".c";
     shims_file = "";
   }
-  
+
   string cmd = cc + " " + cflags + " " +
     prefix + file_ending + " " + shims_file + " " + 
     "-o " + fullpath + " -lm";
@@ -147,7 +179,22 @@ string Module::compile() {
   
   // write out the shims
   writeShims(funcs, tmpdir, libname);
-  
+
+  // generate object files first
+  if (should_use_LLVM_codegen() && !moduleFromUserSource) {
+    std::string bc_filename = prefix + ".bc";
+    std::string object_filename = prefix + ".o";
+    string obj_cmd = "llc --filetype=obj " + bc_filename + " -o " + object_filename;
+    std::cout << obj_cmd << "\n";
+
+    int err = system(obj_cmd.data());
+    taco_uassert(err == 0) << "Compilation command failed:\n"
+                           << obj_cmd
+                           << "\nreturned " << err;
+  }
+
+  std::cout << cmd << "\n";
+
   // now compile it
   int err = system(cmd.data());
   taco_uassert(err == 0) << "Compilation command failed:\n" << cmd
