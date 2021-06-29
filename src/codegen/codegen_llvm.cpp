@@ -250,7 +250,7 @@ void CodeGen_LLVM::visit(const Var *op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Var", op->name);
   auto *v = getSymbol(op->name);
   if (v->getType()->isPointerTy()) {
-    value = this->Builder->CreateLoad(v, "load." + op->name);
+    value = this->Builder->CreateLoad(v, op->name);
   } else {
     value = v;
   }
@@ -395,6 +395,10 @@ void CodeGen_LLVM::visit(const Load *op) {
   auto *arr = codegen(op->arr);
   auto *gep = this->Builder->CreateInBoundsGEP(arr, loc);
   value = this->Builder->CreateLoad(arr, gep);
+  PRINT(*loc);
+  PRINT(*arr);
+  PRINT(*gep);
+  PRINT(*value);
 }
 
 void CodeGen_LLVM::visit(const Malloc *op) {
@@ -443,6 +447,7 @@ void CodeGen_LLVM::visit(const For *op) {
 
   // Initialize header with PHI node
   const Var *var = op->var.as<Var>();
+  PRINT(var->name);
   auto phi = this->Builder->CreatePHI(start->getType(), 2 /* num values */, var->name);
   pushSymbol(var->name, phi);
 
@@ -488,32 +493,34 @@ void CodeGen_LLVM::visit(const Scope *op) {
 }
 
 void CodeGen_LLVM::init_codegen() {
-  if (this->Module == nullptr)
+  if (this->Module == nullptr) {
     this->Module = std::make_unique<llvm::Module>("taco_module", this->Context);
 
-  this->Builder = new llvm::IRBuilder<>(this->Context);
 
-  auto i32 = llvm::Type::getInt32Ty(this->Context);
-  auto i32p = i32->getPointerTo();
+    this->Builder = new llvm::IRBuilder<>(this->Context);
 
-  auto u8 = llvm::Type::getInt8Ty(this->Context);
-  auto u8p = u8->getPointerTo();
-  auto u8ppp = u8->getPointerTo()->getPointerTo()->getPointerTo();
+    auto i32 = llvm::Type::getInt32Ty(this->Context);
+    auto i32p = i32->getPointerTo();
 
-  /* See file include/taco/taco_tensor_t.h for the struct tensor definition */
-  this->tensorType = llvm::StructType::create(this->Context,
-                                              {
-                                                  i32,   /* order */
-                                                  i32p,  /* dimension */
-                                                  i32,   /* csize */
-                                                  i32p,  /* mode_ordering */
-                                                  i32p,  /* mode_types */
-                                                  u8ppp, /* indices */
-                                                  u8p,   /* vals */
-                                                  i32,   /* vals_size */
-                                              },
-                                              "TensorType");
-  this->tensorTypePtr = this->tensorType->getPointerTo();
+    auto u8 = llvm::Type::getInt8Ty(this->Context);
+    auto u8p = u8->getPointerTo();
+    auto u8ppp = u8->getPointerTo()->getPointerTo()->getPointerTo();
+
+    /* See file include/taco/taco_tensor_t.h for the struct tensor definition */
+    this->tensorType = llvm::StructType::create(this->Context,
+                                                {
+                                                    i32,   /* order */
+                                                    i32p,  /* dimension */
+                                                    i32,   /* csize */
+                                                    i32p,  /* mode_ordering */
+                                                    i32p,  /* mode_types */
+                                                    u8ppp, /* indices */
+                                                    u8p,   /* vals */
+                                                    i32,   /* vals_size */
+                                                },
+                                                "TensorType");
+    this->tensorTypePtr = this->tensorType->getPointerTo();
+  }
 }
 
 void CodeGen_LLVM::visit(const Function *func) {
@@ -681,7 +688,7 @@ void CodeGen_LLVM::visit(const GetProperty *op) {
   llvm::Value *tensor = getSymbol(name);
 
   auto i32 = llvm::Type::getInt32Ty(this->Context);
-  auto f64pp = llvm::Type::getDoublePtrTy(this->Context)->getPointerTo();
+  auto f64p = llvm::Type::getDoublePtrTy(this->Context);
 
   // to-do: check if one should load or just generate the gep instruction here!
   switch (op->property) {
@@ -693,10 +700,9 @@ void CodeGen_LLVM::visit(const GetProperty *op) {
       break;
     }
     case TensorProperty::Values: {
-      auto *vals =
-          this->Builder->CreateStructGEP(tensor, (int) TensorProperty::Values, name + ".gep.vals");
-      value = this->Builder->CreateBitCast(
-          vals, f64pp, ".vals.cast");  // cast vals from i8** to double**
+      auto *gep = this->Builder->CreateStructGEP(tensor, (int) TensorProperty::Values);
+      auto *vals = this->Builder->CreateLoad(gep);
+      value = this->Builder->CreateBitCast(vals, f64p, name + ".vals");
       break;
     }
     case TensorProperty::Order:

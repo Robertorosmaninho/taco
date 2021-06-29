@@ -86,6 +86,7 @@ void Module::compileToSource(string path, string prefix) {
       std::string bc_filename = path + prefix + ".bc";
       std::cout << "bc_filename: " << bc_filename << "\n";
       sourcegen->writeModuleToFile(bc_filename);
+      sourcegen->dumpModule();
     }
   }
 
