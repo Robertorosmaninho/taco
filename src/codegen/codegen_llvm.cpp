@@ -394,7 +394,7 @@ void CodeGen_LLVM::visit(const Load *op) {
   auto *loc = codegen(op->loc);
   auto *arr = codegen(op->arr);
   auto *gep = this->Builder->CreateInBoundsGEP(arr, loc);
-  value = this->Builder->CreateLoad(arr, gep);
+  value = this->Builder->CreateLoad(gep);
   PRINT(*loc);
   PRINT(*arr);
   PRINT(*gep);
@@ -687,7 +687,6 @@ void CodeGen_LLVM::visit(const GetProperty *op) {
   const std::string &name = op->tensor.as<Var>()->name;
   llvm::Value *tensor = getSymbol(name);
 
-  auto i32 = llvm::Type::getInt32Ty(this->Context);
   auto f64p = llvm::Type::getDoublePtrTy(this->Context);
 
   // to-do: check if one should load or just generate the gep instruction here!
@@ -696,7 +695,7 @@ void CodeGen_LLVM::visit(const GetProperty *op) {
       auto *dim = this->Builder->CreateStructGEP(
           tensor, (int) TensorProperty::Dimension, name + ".gep.dim");
       value = this->Builder->CreateLoad(
-          this->Builder->CreateLoad(dim, name + ".load"), i32, name + ".dim");
+          this->Builder->CreateLoad(dim), name + ".dim");
       break;
     }
     case TensorProperty::Values: {
