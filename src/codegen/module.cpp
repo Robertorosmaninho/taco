@@ -185,7 +185,7 @@ string Module::compile() {
   if (should_use_LLVM_codegen() && !moduleFromUserSource) {
     std::string bc_filename = prefix + ".bc";
     std::string object_filename = prefix + ".o";
-    string obj_cmd = "llc --filetype=obj " + bc_filename + " -o " + object_filename;
+    string obj_cmd = "llc --filetype=obj --relocation-model=pic " + bc_filename + " -o " + object_filename;
     std::cout << obj_cmd << "\n";
 
     int err = system(obj_cmd.data());
