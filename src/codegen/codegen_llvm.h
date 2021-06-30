@@ -26,8 +26,8 @@ class CodeGen_LLVM : public CodeGen {
   OutputKind outputKind;
   class FindVars;
 
-  llvm::StructType *tensorType;
-  llvm::PointerType *tensorTypePtr;
+  llvm::StructType *tensorStruct;
+  llvm::PointerType *tensorStructPtr;
   llvm::Value *value;  // last llvm value generated
 
   int64_t indent = 0;
@@ -51,6 +51,7 @@ class CodeGen_LLVM : public CodeGen {
   // utils
   void init_codegen();
   llvm::Type *llvmTypeOf(Datatype);
+  void emitPrintf(const std::string &fmt, const std::vector<llvm::Value *> &args);
   llvm::Value *emitExternalCall(const std::string &,
                                 llvm::Type *returnType,
                                 const std::vector<llvm::Type *> &argTypes,
