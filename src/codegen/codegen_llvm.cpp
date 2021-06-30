@@ -610,8 +610,8 @@ void CodeGen_LLVM::visit(const Comment *op) {
 }
 
 void CodeGen_LLVM::visit(const BlankLine *op) {
-  auto _ = CodeGen_LLVM::IndentHelper(this, "BlankLine");
-  throw logic_error("Not Implemented for BlankLine.");
+  // auto _ = CodeGen_LLVM::IndentHelper(this, "BlankLine - no op");
+  //throw logic_error("Not Implemented for BlankLine.");
 }
 
 void CodeGen_LLVM::visit(const Break *op) {
@@ -657,6 +657,7 @@ void CodeGen_LLVM::visit(const GetProperty *op) {
 
   auto i32 = llvm::Type::getInt32Ty(this->Context);
   auto f64pp = llvm::Type::getDoublePtrTy(this->Context)->getPointerTo();
+  auto i32pp = llvm::Type::getInt32PtrTy(this->Context)->getPointerTo();
 
   switch (op->property) {
   case TensorProperty::Dimension: {
@@ -677,7 +678,13 @@ void CodeGen_LLVM::visit(const GetProperty *op) {
   case TensorProperty::ComponentSize:
   case TensorProperty::ModeOrdering:
   case TensorProperty::ModeTypes:
-  case TensorProperty::Indices:
+  case TensorProperty::Indices: {
+    auto *vals = this->Builder->CreateStructGEP(
+        tensor, (int)TensorProperty::Indices, name + ".gep.indices");
+    auto val = this->Builder->CreateBitCast(vals, i32pp);  // cast vals to int32*
+    value = this->Builder->CreateLoad(val, name + ".indices");  // indice is an int8*
+    break;
+  }
   case TensorProperty::ValuesSize:
   default:
     throw logic_error("GetProperty not implemented for " +
