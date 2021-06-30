@@ -134,15 +134,15 @@ llvm::Type* CodeGen_LLVM::llvmTypeOf(Datatype t) {
   if (t.isFloat()) {
     switch (t.getNumBits()) {
       case 32:
-        return llvm::Type::getFloatTy(this->Context);
+        return llvm::Type::getFloatTy(*this->Context);
       case 64:
-        return llvm::Type::getDoubleTy(this->Context);
+        return llvm::Type::getDoubleTy(*this->Context);
       default:
         taco_ierror << "Unable to find LLVM type for " << t;
         return nullptr;
     }
   } else if (t.isInt()) {
-    return llvm::Type::getIntNTy(this->Context, t.getNumBits());
+    return llvm::Type::getIntNTy(*this->Context, t.getNumBits());
   } else {
     taco_ierror << "Unable to find llvm type for " << t;
     return nullptr;
@@ -164,8 +164,8 @@ void CodeGen_LLVM::dumpModule() const {
 void CodeGen_LLVM::emitPrintf(const std::string& fmt, const std::vector<llvm::Value*>& args) {
   auto* ptr = this->Builder->CreateGlobalStringPtr(fmt);
 
-  auto* i8p = get_int_ptr_type(8, this->Context);
-  auto* i32 = get_int_type(32, this->Context);
+  auto* i8p = get_int_ptr_type(8, *this->Context);
+  auto* i32 = get_int_type(32, *this->Context);
 
   std::vector<llvm::Type*> argTypes = {i8p};
   std::vector<llvm::Value*> args_ = {ptr};
@@ -443,13 +443,13 @@ void CodeGen_LLVM::visit(const For* op) {
   llvm::BasicBlock* pre_header = this->Builder->GetInsertBlock();
 
   // Create a new basic block for the loop
-  llvm::BasicBlock* header = llvm::BasicBlock::Create(this->Context, "for_header", this->Func);
+  llvm::BasicBlock* header = llvm::BasicBlock::Create(*this->Context, "for_header", this->Func);
 
-  llvm::BasicBlock* body = llvm::BasicBlock::Create(this->Context, "for_body", this->Func);
+  llvm::BasicBlock* body = llvm::BasicBlock::Create(*this->Context, "for_body", this->Func);
 
-  llvm::BasicBlock* latch = llvm::BasicBlock::Create(this->Context, "for_latch", this->Func);
+  llvm::BasicBlock* latch = llvm::BasicBlock::Create(*this->Context, "for_latch", this->Func);
 
-  llvm::BasicBlock* exit = llvm::BasicBlock::Create(this->Context, "for_exit", this->Func);
+  llvm::BasicBlock* exit = llvm::BasicBlock::Create(*this->Context, "for_exit", this->Func);
 
   this->Builder->CreateBr(header);  // pre-header -> header
 
@@ -503,19 +503,19 @@ void CodeGen_LLVM::visit(const Scope* op) {
 
 void CodeGen_LLVM::init_codegen() {
   if (this->Module == nullptr) {
-    this->Module = std::make_unique<llvm::Module>("taco_module", this->Context);
+    this->Context = std::make_unique<llvm::LLVMContext>();
+    this->Module = std::make_unique<llvm::Module>("taco_module", *this->Context);
+    this->Builder = std::make_unique<llvm::IRBuilder<>>(*this->Context);
 
-    this->Builder = new llvm::IRBuilder<>(this->Context);
-
-    auto i32 = llvm::Type::getInt32Ty(this->Context);
+    auto i32 = llvm::Type::getInt32Ty(*this->Context);
     auto i32p = i32->getPointerTo();
 
-    auto u8 = llvm::Type::getInt8Ty(this->Context);
+    auto u8 = llvm::Type::getInt8Ty(*this->Context);
     auto u8p = u8->getPointerTo();
     auto u8ppp = u8->getPointerTo()->getPointerTo()->getPointerTo();
 
     /* See file include/taco/taco_tensor_t.h for the struct tensor definition */
-    this->tensorStruct = llvm::StructType::create(this->Context,
+    this->tensorStruct = llvm::StructType::create(*this->Context,
                                                   {
                                                       i32,   /* order */
                                                       i32p,  /* dimension */
@@ -551,7 +551,7 @@ void CodeGen_LLVM::visit(const Function* func) {
   for (int i = 0; i < n_args; i++) {
     args.push_back(this->tensorStructPtr);
   }
-  auto i32 = llvm::Type::getInt32Ty(this->Context);
+  auto i32 = llvm::Type::getInt32Ty(*this->Context);
 
   // 4. create a new function in the module with the given types
   this->Func = llvm::Function::Create(llvm::FunctionType::get(i32, args, false),
@@ -560,7 +560,7 @@ void CodeGen_LLVM::visit(const Function* func) {
                                       this->Module.get());
 
   // 5. Create the first basic block
-  this->Builder->SetInsertPoint(llvm::BasicBlock::Create(this->Context, "entry", this->Func));
+  this->Builder->SetInsertPoint(llvm::BasicBlock::Create(*this->Context, "entry", this->Func));
 
   // 6. Push arguments to symbol table
   pushScope();
@@ -585,7 +585,7 @@ void CodeGen_LLVM::visit(const Function* func) {
   func->body.accept(this);
 
   // 8. Create an exit basic block and exit it
-  llvm::BasicBlock* exit = llvm::BasicBlock::Create(this->Context, "exit", this->Func);
+  llvm::BasicBlock* exit = llvm::BasicBlock::Create(*this->Context, "exit", this->Func);
   this->Builder->CreateBr(exit);
   this->Builder->SetInsertPoint(exit);                       // ... -> exit
   this->Builder->CreateRet(llvm::ConstantInt::get(i32, 0));  // return 0
@@ -624,18 +624,18 @@ void CodeGen_LLVM::visit(const Yield* op) {
 void CodeGen_LLVM::visit(const Allocate* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Allocate");
 
-  auto voidptr = get_void_ptr_type(this->Context);
-  auto i64 = get_int_type(64, this->Context);
+  auto voidptr = get_void_ptr_type(*this->Context);
+  auto i64 = get_int_type(64, *this->Context);
 
   auto var = codegen(op->var);
   auto num_elements = this->Builder->CreateZExt(codegen(op->num_elements), i64);
   if (op->is_realloc) {
     auto size = this->Builder->CreateMul(
-        num_elements, get_int_constant(64, 4, this->Context), "realloc.size");
+        num_elements, get_int_constant(64, 4, *this->Context), "realloc.size");
     auto ret = emitExternalCall("realloc", voidptr, {voidptr, i64}, {var, size});
     ret->setName("realloc.ret");
   } else {
-    auto size = get_int_constant(64, 4, this->Context);
+    auto size = get_int_constant(64, 4, *this->Context);
     auto ret = emitExternalCall("calloc", voidptr, {i64, i64}, {num_elements, size});
     ret->setName("calloc.ret");
   }
