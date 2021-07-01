@@ -390,7 +390,28 @@ void CodeGen_LLVM::visit(const Call* op) {
 
 void CodeGen_LLVM::visit(const IfThenElse* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "IfThenElse");
-  throw logic_error("Not Implemented for IfThenElse.");
+
+  // Create the BasicBlocks
+  auto* true_bb = llvm::BasicBlock::Create(*this->Context, "true_bb", this->Func);
+  auto* false_bb = llvm::BasicBlock::Create(*this->Context, "false_ bb", this->Func);
+  auto* after_bb = llvm::BasicBlock::Create(*this->Context, "after_bb", this->Func);
+
+  // Create condition
+  Builder->CreateCondBr(codegen(op->cond), true_bb, false_bb);
+
+  // True case
+  Builder->SetInsertPoint(true_bb);
+  codegen(op->then);
+  Builder->CreateBr(after_bb);
+
+  // False Case
+  if (op->otherwise != nullptr) {
+    codegen(op->otherwise);
+  }
+  Builder->CreateBr(after_bb);
+
+  // Set the Insertion point to the next BasicBlock
+  Builder->SetInsertPoint(after_bb);
 }
 
 void CodeGen_LLVM::visit(const Case* op) {
@@ -716,12 +737,10 @@ void CodeGen_LLVM::visit(const GetProperty* op) {
     case TensorProperty::ModeOrdering:
     case TensorProperty::ModeTypes:
     case TensorProperty::Indices: {
-      auto *vals = this->Builder->CreateStructGEP(
-        tensor, (int)TensorProperty::Indices, name + ".gep.indices");
-      auto val = this->Builder->CreateBitCast(vals, i32pp);  // cast vals to int32*
-      value = this->Builder->CreateLoad(val, name + ".indices");  // indice is an int8*
+      auto* gep = this->Builder->CreateStructGEP(tensor, (int)TensorProperty::Indices);
+      auto* bitcast = this->Builder->CreateBitCast(gep, tensorType_pp);  // cast vals to int32*
+      value = this->Builder->CreateLoad(bitcast, name + ".indices");  // indice is an int8*
       break;
-  }
     }
     case TensorProperty::ValuesSize:
     default:
