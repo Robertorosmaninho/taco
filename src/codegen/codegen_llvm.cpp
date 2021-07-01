@@ -330,42 +330,117 @@ void CodeGen_LLVM::visit(const Max* op) {
 
 void CodeGen_LLVM::visit(const BitAnd* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "BitAnd");
-  throw logic_error("Not Implemented for BitAnd.");
+  value = Builder->CreateAnd(codegen(op->a), codegen(op->b));
 }
 
 void CodeGen_LLVM::visit(const BitOr* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "BitOr");
-  throw logic_error("Not Implemented for BitOr.");
+  value = Builder->CreateOr(codegen(op->a), codegen(op->b));
 }
 
 void CodeGen_LLVM::visit(const Eq* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Eq");
-  throw logic_error("Not Implemented for Eq.");
+  auto* a = codegen(op->a);
+  auto* b = codegen(op->b);
+
+  if (op->type.isFloat()) {
+    if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
+      if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
+        if (FPa->isNaN() || FPb->isNaN())
+          value = Builder->CreateFCmpUEQ(a,b); // ULE means that either operand may be a QNAN.
+        else
+          value = Builder->CreateFCmpOEQ(a,b); // OLE means that neither operand is a QNAN
+      }
+    }
+  } else {
+    value = Builder->CreateICmpEQ(a, b);
+  }
 }
 
 void CodeGen_LLVM::visit(const Neq* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Neq");
-  throw logic_error("Not Implemented for Neq.");
+  auto* a = codegen(op->a);
+  auto* b = codegen(op->b);
+
+  if (op->type.isFloat()) {
+    if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
+      if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
+        if (FPa->isNaN() || FPb->isNaN())
+          value = Builder->CreateFCmpONE(a,b); // ULE means that either operand may be a QNAN.
+        else
+          value = Builder->CreateFCmpONE(a,b); // OLE means that neither operand is a QNAN
+      }
+    }
+  } else {
+    value = Builder->CreateICmpNE(a, b);
+  }
 }
 
 void CodeGen_LLVM::visit(const Gt* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Gt");
-  throw logic_error("Not Implemented for Gt.");
+  auto* a = codegen(op->a);
+  auto* b = codegen(op->b);
+
+  if (op->type.isFloat()) {
+    if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
+      if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
+        if (FPa->isNaN() || FPb->isNaN())
+          value = Builder->CreateFCmpUGT(a,b); // ULE means that either operand may be a QNAN.
+        else
+          value = Builder->CreateFCmpOGT(a,b); // OLE means that neither operand is a QNAN
+      }
+    }
+  } else if (op->type.isUInt()) {
+    value = Builder->CreateICmpUGT(a, b);
+  } else {
+    value = Builder->CreateICmpUGT(a, b);
+  }
 }
 
 void CodeGen_LLVM::visit(const Lt* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Lt");
-  throw logic_error("Not Implemented for Lt.");
+  auto* a = codegen(op->a);
+  auto* b = codegen(op->b);
+
+  if (op->type.isFloat()) {
+    if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
+      if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
+        if (FPa->isNaN() || FPb->isNaN())
+          value = Builder->CreateFCmpULT(a,b); // ULE means that either operand may be a QNAN.
+        else
+          value = Builder->CreateFCmpOLT(a,b); // OLE means that neither operand is a QNAN
+      }
+    }
+  } else if (op->type.isUInt()) {
+    value = Builder->CreateICmpULT(a, b);
+  } else {
+    value = Builder->CreateICmpULT(a, b);
+  }
 }
 
 void CodeGen_LLVM::visit(const Gte* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Gte");
-  throw logic_error("Not Implemented for Gte.");
+  auto* a = codegen(op->a);
+  auto* b = codegen(op->b);
+
+  if (op->type.isFloat()) {
+    if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
+      if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
+        if (FPa->isNaN() || FPb->isNaN())
+          value = Builder->CreateFCmpUGE(a,b); // ULE means that either operand may be a QNAN.
+        else
+          value = Builder->CreateFCmpOGE(a,b); // OLE means that neither operand is a QNAN
+      }
+    }
+  } else if (op->type.isUInt()) {
+    value = Builder->CreateICmpUGE(a, b);
+  } else {
+    value = Builder->CreateICmpUGE(a, b);
+  }
 }
 
 void CodeGen_LLVM::visit(const Lte* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Lte");
-
   auto* a = codegen(op->a);
   auto* b = codegen(op->b);
 
