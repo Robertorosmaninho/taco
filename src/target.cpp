@@ -76,6 +76,8 @@ bool Target::validateTargetString(const string &s) {
 }
 
 Target getTargetFromEnvironment() {
-  return Target(Target::Arch::C99, Target::OS::MacOS);
+  // XXX: change function to actually get target from environment
+  // return Target(Target::Arch::C99, Target::OS::MacOS);
+  return Target(Target::Arch::X86, Target::OS::MacOS);
 }
 } // namespace taco

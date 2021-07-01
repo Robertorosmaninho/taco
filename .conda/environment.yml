@@ -4,6 +4,6 @@ channels:
   - conda-forge
 dependencies:
   - cmake
+  - clangdev=11
   - llvmdev=11
-  - llvm-openmp=11
   - compilers

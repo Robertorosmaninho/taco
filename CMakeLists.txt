@@ -12,7 +12,7 @@ project(taco
 option(CUDA "Build for NVIDIA GPU (CUDA must be preinstalled)" OFF)
 option(PYTHON "Build TACO for python environment" OFF)
 option(OPENMP "Build with OpenMP execution support" OFF)
-option(LLVM "Build with LLVM backend support")
+option(LLVM "Build with LLVM backend support" OFF)
 option(ENABLE_TESTS "Enable tests" ON)
 option(COVERAGE "Build with code coverage analysis" OFF)
 set(TACO_FEATURE_CUDA 0)
@@ -42,7 +42,7 @@ if (LLVM)
   message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
   # Find the libraries that correspond to the LLVM components
   # that we wish to use
-  llvm_map_components_to_libnames(llvm_libs support core irreader)
+  llvm_map_components_to_libnames(llvm_libs support core irreader mcjit native)
   add_definitions(-DUSE_LLVM)
   add_definitions(-DENABLE_TOSTRING_LLVM)
   add_definitions(-DHAVE_LLVM)

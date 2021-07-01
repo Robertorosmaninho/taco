@@ -32,8 +32,15 @@ shared_ptr<CodeGen> CodeGen::init_default(std::ostream &dest, OutputKind outputK
   if (should_use_CUDA_codegen()) {
     return make_shared<CodeGen_CUDA>(dest, outputKind);
   }
+  /*
+    The following statements must be guarded with #ifdef because
+    CodeGen_LLVM depends on LLVM header files. Those which are only
+    available if we have an LLVM build. For other parts of TACO, it
+    is safe to use `should_use_LLVM_codegen()` function without any
+    guard
+  */
   #ifdef HAVE_LLVM
-  else if (should_use_LLVM_codegen()){
+  else if (should_use_LLVM_codegen() && outputKind == CodeGen::ImplementationGen){
     return make_shared<CodeGen_LLVM>(dest, outputKind);
   }
   #endif
