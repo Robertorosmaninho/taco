@@ -497,6 +497,7 @@ void CodeGen_LLVM::visit(const IfThenElse* op) {
   Builder->CreateBr(after_bb);
 
   // False Case
+  Builder->SetInsertPoint(false_bb);
   if (op->otherwise != nullptr) {
     codegen(op->otherwise);
   }
