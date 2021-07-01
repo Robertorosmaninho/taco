@@ -365,7 +365,24 @@ void CodeGen_LLVM::visit(const Gte* op) {
 
 void CodeGen_LLVM::visit(const Lte* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Lte");
-  throw logic_error("Not Implemented for Lte.");
+
+  auto* a = codegen(op->a);
+  auto* b = codegen(op->b);
+
+  if (op->type.isFloat()) {
+    if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
+      if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
+        if (FPa->isNaN() || FPb->isNaN())
+          value = Builder->CreateFCmpULE(a,b); // ULE means that either operand may be a QNAN.
+        else
+          value = Builder->CreateFCmpOLE(a,b); // OLE means that neither operand is a QNAN
+      }
+    }
+  } else if (op->type.isUInt()) {
+    value = Builder->CreateICmpULE(a, b);
+  } else {
+    value = Builder->CreateICmpULE(a, b);
+  }
 }
 
 void CodeGen_LLVM::visit(const And* op) {
