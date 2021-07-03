@@ -3,6 +3,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/IR/Constants.h>
 
 #include "codegen_llvm.h"
 #include "llvm_utils.hpp"
@@ -174,6 +175,14 @@ void CodeGen_LLVM::emitPrintf(const std::string& fmt, const std::vector<llvm::Va
     args_.emplace_back(arg);
   }
   emitExternalCall("printf", i32, argTypes, args_);
+  emitfflush();
+}
+
+void CodeGen_LLVM::emitfflush() {
+  auto* i8p = get_int_ptr_type(8, *this->Context);
+  auto* i32 = get_int_type(32, *this->Context);
+  auto* null = llvm::ConstantPointerNull::get(i8p);
+  emitExternalCall("fflush", i32, {i8p}, {null});
 }
 
 llvm::Value* CodeGen_LLVM::emitExternalCall(const std::string& funcName,
@@ -740,18 +749,31 @@ void CodeGen_LLVM::visit(const Allocate* op) {
 
   auto voidptr = get_void_ptr_type(*this->Context);
   auto i64 = get_int_type(64, *this->Context);
+  auto i32p = get_int_ptr_type(32, *this->Context);
 
-  auto var = codegen(op->var);
-  auto num_elements = this->Builder->CreateZExt(codegen(op->num_elements), i64);
-  if (op->is_realloc) {
+  auto alloca = this->Builder->CreateAlloca(i32p);
+//  auto var = codegen(op->var);
+  auto num_elements = codegen(op->num_elements);
+  auto sext_num_elements = this->Builder->CreateSExt(num_elements, i64);
+  
+  if (op->is_realloc) { 
     auto size = this->Builder->CreateMul(
-        num_elements, get_int_constant(64, 4, *this->Context), "realloc.size");
-    auto ret = emitExternalCall("realloc", voidptr, {voidptr, i64}, {var, size});
+        sext_num_elements, get_int_constant(64, 4, *this->Context), "realloc.size");
+
+    auto ret = emitExternalCall("realloc", voidptr, {i64}, {size});
     ret->setName("realloc.ret");
+    
+    auto bitcast = this->Builder->CreateBitCast(ret, i32p);
+    this->Builder->CreateStore(bitcast, alloca);
   } else {
-    auto size = get_int_constant(64, 4, *this->Context);
-    auto ret = emitExternalCall("calloc", voidptr, {i64, i64}, {num_elements, size});
-    ret->setName("calloc.ret");
+    auto size = this->Builder->CreateMul(
+      sext_num_elements, get_int_constant(64, 4, *this->Context));
+      
+   auto call = emitExternalCall("malloc", voidptr, {i64}, {size});
+   call->setName("calloc.ret");
+
+   auto bitcast = this->Builder->CreateBitCast(call, i32p);
+   this->Builder->CreateStore(bitcast, alloca);
   }
 }
 
@@ -811,6 +833,7 @@ void CodeGen_LLVM::visit(const GetProperty* op) {
   llvm::Value* tensor = getSymbol(name);
 
   auto* tensorType_pp = llvmTypeOf(op->type)->getPointerTo()->getPointerTo();  // TensorType**
+  auto* i32p = get_int_ptr_type(32, *this->Context);
 
   switch (op->property) {
     case TensorProperty::Dimension: {
@@ -830,9 +853,13 @@ void CodeGen_LLVM::visit(const GetProperty* op) {
     case TensorProperty::ModeOrdering:
     case TensorProperty::ModeTypes:
     case TensorProperty::Indices: {
-      auto* gep = this->Builder->CreateStructGEP(tensor, (int)TensorProperty::Indices);
-      auto* bitcast = this->Builder->CreateBitCast(gep, tensorType_pp);  // cast vals to int32*
-      value = this->Builder->CreateLoad(bitcast, name + ".indices");  // indice is an int8*
+      auto* mode = get_int_constant(32, op->mode, *this->Context);
+      auto* index = get_int_constant(32, op->index, *this->Context);
+
+      auto* load1 = this->Builder->CreateLoad(this->Builder->CreateStructGEP(tensor, (int)TensorProperty::Indices));  // i8***
+      auto* load2 = this->Builder->CreateLoad(this->Builder->CreateInBoundsGEP(load1, mode));  // i8**
+      auto* load3 = this->Builder->CreateLoad(this->Builder->CreateInBoundsGEP(load2, index));  // i8*
+      value = this->Builder->CreateBitCast(load3, i32p);
       break;
     }
     case TensorProperty::ValuesSize:

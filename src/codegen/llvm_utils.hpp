@@ -45,7 +45,7 @@ inline llvm::Type* get_fp_ptr_type(const int width, llvm::LLVMContext& Context) 
   return nullptr;
 }
 
-inline llvm::Type* get_int_ptr_type(const int width, llvm::LLVMContext& Context) {
+inline llvm::PointerType* get_int_ptr_type(const int width, llvm::LLVMContext& Context) {
   switch (width) {
     case 64:
       return llvm::Type::getInt64PtrTy(Context);

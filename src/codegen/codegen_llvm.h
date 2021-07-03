@@ -52,6 +52,7 @@ class CodeGen_LLVM : public CodeGen {
   void init_codegen();
   llvm::Type* llvmTypeOf(Datatype);
   void emitPrintf(const std::string& fmt, const std::vector<llvm::Value*>& args);
+  void emitfflush();
   llvm::Value* emitExternalCall(const std::string&,
                                 llvm::Type* returnType,
                                 const std::vector<llvm::Type*>& argTypes,
