@@ -329,7 +329,12 @@ void CodeGen_LLVM::visit(const Rem* op) {
 
 void CodeGen_LLVM::visit(const Min* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Min");
-  throw logic_error("Not Implemented for Min.");
+  // LLVM's minnum intrinsic only does binary ops
+  value = Builder->CreateMinNum(codegen(op->operands[0]),
+                                codegen(op->operands[1]));
+  for (size_t i=2; i<op->operands.size(); i++) {
+    value = Builder->CreateMinNum(value, codegen(op->operands[i]));
+  }
 }
 
 void CodeGen_LLVM::visit(const Max* op) {
