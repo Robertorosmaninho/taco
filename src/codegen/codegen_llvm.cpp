@@ -471,12 +471,12 @@ void CodeGen_LLVM::visit(const Lte* op) {
 
 void CodeGen_LLVM::visit(const And* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "And");
-  throw logic_error("Not Implemented for And.");
+  value = Builder->CreateAnd(codegen(op->a), codegen(op->b));
 }
 
 void CodeGen_LLVM::visit(const Or* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Or");
-  throw logic_error("Not Implemented for Or.");
+  value = Builder->CreateOr(codegen(op->a), codegen(op->b));
 }
 
 void CodeGen_LLVM::visit(const Cast* op) {
