@@ -612,7 +612,35 @@ void CodeGen_LLVM::visit(const For* op) {
 
 void CodeGen_LLVM::visit(const While* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "While");
-  throw logic_error("Not Implemented for While");
+  taco_tassert(op->kind == LoopKind::Serial) <<
+    "Only serial loop codegen supported by LLVM backend";
+
+  llvm::BasicBlock* pre_header = this->Builder->GetInsertBlock();
+
+  // Create a new basic block for the loop
+  llvm::BasicBlock* loop = llvm::BasicBlock::Create(*this->Context, "while", this->Func);
+  llvm::BasicBlock* exit = llvm::BasicBlock::Create(*this->Context, "end_while", this->Func);
+
+  // entry condition
+  auto condition = codegen(op->cond);
+  Builder->CreateCondBr(condition, loop, exit);
+  Builder->SetInsertPoint(loop);
+
+  // create phi node
+  llvm::PHINode *phi = Builder->CreatePHI(condition->getType(), 2);
+  phi->addIncoming(condition, pre_header);
+
+  // codegen body
+  codegen(op->contents);
+
+  // create unconditional branch to check
+  auto branchToCond = Builder->CreateBr(pre_header);
+
+  // phi backedge
+  phi->addIncoming(branchToCond, Builder->GetInsertBlock());
+
+  // seet the insert point for the exit loop
+  Builder->SetInsertPoint(exit);
 }
 
 void CodeGen_LLVM::visit(const Block* op) {
