@@ -38,8 +38,8 @@
 
 #ifdef ENABLE_TOSTRING_LLVM
 #if __has_include("llvm/Support/raw_os_ostream.h")
-#include "llvm/IR/Function.h"
-#include "llvm/IR/Module.h"
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>
 #include <llvm/Support/raw_os_ostream.h>
 #else
