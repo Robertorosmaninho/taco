@@ -622,9 +622,25 @@ void CodeGen_LLVM::visit(const IfThenElse* op) {
   Builder->SetInsertPoint(after_bb);
 }
 
+namespace {
+  Stmt caseToIfThenElse(std::vector<std::pair<Expr,Stmt>> clauses, bool alwaysMatch) {
+    std::vector<std::pair<Expr,Stmt>> rest(clauses.begin()+1, clauses.end());
+    if (rest.size() == 0) {
+      // if alwaysMatch is true, then this one goes into the else clause,
+      // otherwise, we generate an empty else clause
+      return !alwaysMatch ? clauses[0].second :
+        IfThenElse::make(clauses[0].first, clauses[0].second, Comment::make(""));
+    } else {
+      return IfThenElse::make(clauses[0].first,
+                            clauses[0].second,
+                            caseToIfThenElse(rest, alwaysMatch));
+    }
+  }
+} // anonymous namespace
+
 void CodeGen_LLVM::visit(const Case* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Case");
-  throw logic_error("Not Implemented for Case.");
+  codegen(caseToIfThenElse(op->clauses, op->alwaysMatch));
 }
 
 void CodeGen_LLVM::visit(const Switch* op) {
