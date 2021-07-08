@@ -879,8 +879,9 @@ void CodeGen_LLVM::visit(const Yield* op) {
 }
 
 void CodeGen_LLVM::visit(const Allocate* op) {
+auto _ = CodeGen_LLVM::IndentHelper(this, "Warning: Missing Allocate implementation");
+/*
   auto _ = CodeGen_LLVM::IndentHelper(this, "Allocate");
-
   auto voidptr = get_void_ptr_type(*this->Context);
   auto i64 = get_int_type(64, *this->Context);
   auto i32p = get_int_ptr_type(32, *this->Context);
@@ -908,7 +909,7 @@ void CodeGen_LLVM::visit(const Allocate* op) {
 
    auto bitcast = this->Builder->CreateBitCast(call, i32p);
    this->Builder->CreateStore(bitcast, alloca);
-  }
+  }*/
 }
 
 void CodeGen_LLVM::visit(const Free* op) {
