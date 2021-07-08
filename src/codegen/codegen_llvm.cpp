@@ -866,7 +866,11 @@ void CodeGen_LLVM::visit(const VarDecl* op) {
 
 void CodeGen_LLVM::visit(const Assign* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Assign");
-  throw logic_error("Not Implemented for Assign.");
+
+  const Var* lhs = op->lhs.as<Var>();
+  auto *rhs = codegen(op->rhs);
+  auto *ptr = getSymbol(lhs->name);
+  this->Builder->CreateStore(rhs, ptr);
 }
 
 void CodeGen_LLVM::visit(const Yield* op) {
