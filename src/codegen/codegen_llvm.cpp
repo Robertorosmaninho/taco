@@ -605,7 +605,7 @@ void CodeGen_LLVM::visit(const IfThenElse* op) {
 
   // Create the BasicBlocks
   auto* true_bb = llvm::BasicBlock::Create(*this->Context, "true_bb", this->Func);
-  auto* false_bb = llvm::BasicBlock::Create(*this->Context, "false_ bb", this->Func);
+  auto* false_bb = llvm::BasicBlock::Create(*this->Context, "false_bb", this->Func);
   auto* after_bb = llvm::BasicBlock::Create(*this->Context, "after_bb", this->Func);
 
   // Create condition
