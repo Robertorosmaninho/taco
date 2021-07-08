@@ -575,7 +575,6 @@ void CodeGen_LLVM::visit(const Lte* op) {
 
 void CodeGen_LLVM::visit(const And* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "And");
-
   auto* actual_bb = Builder->GetInsertBlock();
 
   // Create the BasicBlocks
@@ -591,7 +590,7 @@ void CodeGen_LLVM::visit(const And* op) {
   auto b = codegen(op->b);
   Builder->CreateBr(end_bb);
 
-  // Crete PHI node on end basicblock to get the result from a && b
+  // Create the PHI node on the end_bb to get the result from a && b
   Builder->SetInsertPoint(end_bb);
   auto phi = Builder->CreatePHI(get_int_type(1, *this->Context), 2);
   phi->addIncoming(a, actual_bb);
@@ -601,7 +600,27 @@ void CodeGen_LLVM::visit(const And* op) {
 
 void CodeGen_LLVM::visit(const Or* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Or");
-  value = Builder->CreateOr(codegen(op->a), codegen(op->b));
+  auto* actual_bb = Builder->GetInsertBlock();
+
+  // Create the BasicBlocks
+  auto* false_bb = llvm::BasicBlock::Create(*this->Context, "false_or_bb", this->Func);
+  auto* end_bb = llvm::BasicBlock::Create(*this->Context, "end_or_bb", this->Func);
+  
+  // Generate first condition
+  auto a = codegen(op->a);
+  Builder->CreateCondBr(a, false_bb, end_bb);
+
+  // If false -> Generate the sencond condition to test
+  Builder->SetInsertPoint(false_bb);
+  auto b = codegen(op->b);
+  Builder->CreateBr(end_bb);
+
+  // Create the PHI node on the end_bb to get the result from a || b
+  Builder->SetInsertPoint(end_bb);
+  auto phi = Builder->CreatePHI(get_int_type(1, *this->Context), 2);
+  phi->addIncoming(a, actual_bb);
+  phi->addIncoming(b, false_bb);
+  value = phi;
 }
 
 void CodeGen_LLVM::visit(const Cast* op) {
