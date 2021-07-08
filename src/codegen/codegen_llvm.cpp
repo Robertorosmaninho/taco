@@ -716,29 +716,25 @@ void CodeGen_LLVM::visit(const While* op) {
   taco_tassert(op->kind == LoopKind::Serial) <<
     "Only serial loop codegen supported by LLVM backend";
 
-  llvm::BasicBlock* pre_header = this->Builder->GetInsertBlock();
-
   // Create a new basic block for the loop
-  llvm::BasicBlock* loop = llvm::BasicBlock::Create(*this->Context, "while", this->Func);
-  llvm::BasicBlock* exit = llvm::BasicBlock::Create(*this->Context, "end_while", this->Func);
+  llvm::BasicBlock* header = llvm::BasicBlock::Create(*this->Context, "while_header", this->Func);
+  llvm::BasicBlock* loop = llvm::BasicBlock::Create(*this->Context, "while_body", this->Func);
+  llvm::BasicBlock* exit = llvm::BasicBlock::Create(*this->Context, "while_end", this->Func);
+  
+  // pre_header -> header
+  Builder->CreateBr(header);
 
   // entry condition
+  Builder->SetInsertPoint(header);
   auto condition = codegen(op->cond);
   Builder->CreateCondBr(condition, loop, exit);
-  Builder->SetInsertPoint(loop);
-
-  // create phi node
-  llvm::PHINode *phi = Builder->CreatePHI(condition->getType(), 2);
-  phi->addIncoming(condition, pre_header);
 
   // codegen body
+  Builder->SetInsertPoint(loop);
   codegen(op->contents);
 
   // create unconditional branch to check
-  auto branchToCond = Builder->CreateBr(pre_header);
-
-  // phi backedge
-  phi->addIncoming(branchToCond, Builder->GetInsertBlock());
+  Builder->CreateBr(header);
 
   // seet the insert point for the exit loop
   Builder->SetInsertPoint(exit);
