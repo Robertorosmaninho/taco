@@ -575,7 +575,28 @@ void CodeGen_LLVM::visit(const Lte* op) {
 
 void CodeGen_LLVM::visit(const And* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "And");
-  value = Builder->CreateAnd(codegen(op->a), codegen(op->b));
+
+  auto* actual_bb = Builder->GetInsertBlock();
+
+  // Create the BasicBlocks
+  auto* true_bb = llvm::BasicBlock::Create(*this->Context, "true_and_bb", this->Func);
+  auto* end_bb = llvm::BasicBlock::Create(*this->Context, "end_and_bb", this->Func);
+
+  // Generate first condition
+  auto a = codegen(op->a);
+  Builder->CreateCondBr(a, true_bb, end_bb);
+
+  // If true -> Generate sencond condition
+  Builder->SetInsertPoint(true_bb);
+  auto b = codegen(op->b);
+  Builder->CreateBr(end_bb);
+
+  // Crete PHI node on end basicblock to get the result from a && b
+  Builder->SetInsertPoint(end_bb);
+  auto phi = Builder->CreatePHI(get_int_type(1, *this->Context), 2);
+  phi->addIncoming(a, actual_bb);
+  phi->addIncoming(b, true_bb);
+  value = phi;
 }
 
 void CodeGen_LLVM::visit(const Or* op) {
