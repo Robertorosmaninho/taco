@@ -690,7 +690,7 @@ void CodeGen_LLVM::visit(const For* op) {
   pushSymbol(var->name, phi);
 
   // Compute exit condition
-  auto cond = this->Builder->CreateICmpSLT(phi, end);
+  auto cond = this->Builder->CreateICmpSLT(phi, end); // Always less then?
   this->Builder->CreateCondBr(cond, body, exit);
 
   // Compute increment and jump back to header
