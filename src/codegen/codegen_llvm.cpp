@@ -587,7 +587,12 @@ void CodeGen_LLVM::visit(const Or* op) {
 
 void CodeGen_LLVM::visit(const Cast* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Cast");
-  throw logic_error("Not Implemented for Cast.");
+    if (op->type.isFloat()) {
+    value = Builder->CreateFPCast(codegen(op->a), llvmTypeOf(op->type));
+  } else {
+    value = Builder->CreateIntCast(codegen(op->a), llvmTypeOf(op->type),
+            !op->type.isUInt());
+  }
 }
 
 void CodeGen_LLVM::visit(const Call* op) {
