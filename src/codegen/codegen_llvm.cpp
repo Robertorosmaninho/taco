@@ -918,7 +918,7 @@ void CodeGen_LLVM::visit(const Free* op) {
 
 void CodeGen_LLVM::visit(const Comment* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Comment");
-  throw logic_error("Not Implemented for Comment.");
+  // no op, do nothing
 }
 
 void CodeGen_LLVM::visit(const BlankLine *op) {
