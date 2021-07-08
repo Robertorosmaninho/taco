@@ -338,8 +338,6 @@ void CodeGen_LLVM::visit(const Min* op) {
   if (op->type.isFloat()) {
     // LLVM's minnum intrinsic only does binary ops
     value = Builder->CreateMinNum(codegen(op->operands[0]), 
-  value = Builder->CreateMinNum(codegen(op->operands[0]),
-    value = Builder->CreateMinNum(codegen(op->operands[0]), 
                                   codegen(op->operands[1]));
     for (size_t i=2; i<op->operands.size(); i++) {
       value = Builder->CreateMinNum(value, codegen(op->operands[i]));
