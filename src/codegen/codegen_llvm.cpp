@@ -638,7 +638,7 @@ namespace {
   }
 } // anonymous namespace
 
-void CodeGen_LLVM::visit(const Case* op) {
+void CodeGen_LLVM::visit(const Case* op) { // Not tested
   auto _ = CodeGen_LLVM::IndentHelper(this, "Case");
   codegen(caseToIfThenElse(op->clauses, op->alwaysMatch));
 }
