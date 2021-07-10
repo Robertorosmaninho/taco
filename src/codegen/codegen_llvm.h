@@ -45,6 +45,7 @@ class CodeGen_LLVM : public CodeGen {
   void pushSymbol(const std::string& name, llvm::Value* v);
   void removeSymbol(const std::string& name);
   llvm::Value* getSymbol(const std::string& name);
+  bool containsSymbol(const std::string& name);
   void pushScope();
   void popScope();
 

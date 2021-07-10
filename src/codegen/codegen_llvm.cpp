@@ -120,6 +120,10 @@ llvm::Value* CodeGen_LLVM::getSymbol(const std::string& name) {
   return this->symbolTable.get(name);
 }
 
+bool CodeGen_LLVM::containsSymbol(const std::string& name) {
+  return this->symbolTable.contains(name);
+}
+
 void CodeGen_LLVM::pushScope() {
   this->symbolTable.scope();
 }
@@ -911,10 +915,15 @@ void CodeGen_LLVM::visit(const Function* func) {
 void CodeGen_LLVM::visit(const VarDecl* op) {
   const Var* lhs = op->var.as<Var>();
   auto _ = CodeGen_LLVM::IndentHelper(this, "VarDecl", lhs->name);
+  llvm::Value *ptr = nullptr;
+  if (containsSymbol(lhs->name)){
+    ptr = getSymbol(lhs->name);
+  }
+  else {
   // Create the pointer
-  llvm::Type* rhs_llvm_type = llvmTypeOf(op->rhs.type());
-  auto* ptr = this->Builder->CreateAlloca(rhs_llvm_type);
-
+    llvm::Type* rhs_llvm_type = llvmTypeOf(op->rhs.type());
+    ptr = this->Builder->CreateAlloca(rhs_llvm_type);
+  }
   // visit op rhs to produce a value
   // codegen ensures that a LLVM value was produced
   this->Builder->CreateStore(codegen(op->rhs), ptr);
