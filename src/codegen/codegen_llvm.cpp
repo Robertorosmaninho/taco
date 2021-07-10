@@ -506,7 +506,7 @@ void CodeGen_LLVM::visit(const Gt* op) {
   } else if (op->type.isUInt()) {
     value = Builder->CreateICmpUGT(a, b);
   } else {
-    value = Builder->CreateICmpUGT(a, b);
+    value = Builder->CreateICmpSGT(a, b);
   }
 }
 
@@ -527,7 +527,7 @@ void CodeGen_LLVM::visit(const Lt* op) {
   } else if (op->type.isUInt()) {
     value = Builder->CreateICmpULT(a, b);
   } else {
-    value = Builder->CreateICmpULT(a, b);
+    value = Builder->CreateICmpSLT(a, b);
   }
 }
 
@@ -548,7 +548,7 @@ void CodeGen_LLVM::visit(const Gte* op) {
   } else if (op->type.isUInt()) {
     value = Builder->CreateICmpUGE(a, b);
   } else {
-    value = Builder->CreateICmpUGE(a, b);
+    value = Builder->CreateICmpSGE(a, b);
   }
 }
 
@@ -569,7 +569,7 @@ void CodeGen_LLVM::visit(const Lte* op) {
   } else if (op->type.isUInt()) {
     value = Builder->CreateICmpULE(a, b);
   } else {
-    value = Builder->CreateICmpULE(a, b);
+    value = Builder->CreateICmpSLE(a, b);
   }
 }
 
