@@ -632,8 +632,17 @@ void CodeGen_LLVM::visit(const Cast* op) {
     if (op->type.isFloat()) {
     value = Builder->CreateFPCast(codegen(op->a), llvmTypeOf(op->type));
   } else {
-    value = Builder->CreateIntCast(codegen(op->a), llvmTypeOf(op->type),
-            !op->type.isUInt());
+    auto a = codegen(op->a);
+    auto destType = llvmTypeOf(op->type);
+
+    // CreateIntCast uses SExt is src type is signed int and ZExt if not
+    // ZExt: When zero extending from i1, the result will always be either 0 or 1.
+    // SExt: When sign extending from i1, the extension always results in -1 or 0.
+    // TACO uses "(iC0 == i)" to increment, so we can't produce negative values for it.
+    if (a->getType()->isIntOrIntVectorTy(1))
+      value = Builder->CreateIntCast(a, destType, false);
+    else
+      value = Builder->CreateIntCast(a, destType, !op->type.isUInt());
   }
 }
 
