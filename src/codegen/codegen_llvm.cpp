@@ -346,43 +346,18 @@ void CodeGen_LLVM::visit(const Min* op) {
       value = Builder->CreateMinNum(value, codegen(op->operands[i]));
     }
   } else {
-    llvm::PHINode* phi = nullptr;
+    auto a = codegen(op->operands[0]);
+    auto b = codegen(op->operands[1]);
 
-    for (size_t i = 1; i < op->operands.size(); i++) {
-      // Create the BasicBlocks
-      auto* true_bb = llvm::BasicBlock::Create(*this->Context, "true_min_bb", this->Func);
-      auto* false_bb = llvm::BasicBlock::Create(*this->Context, "false_min_bb", this->Func);
-      auto* after_bb = llvm::BasicBlock::Create(*this->Context, "after_min_bb", this->Func);
+    llvm::Value* icmp =
+        (op->type.isInt()) ? Builder->CreateICmpSLT(a, b) : Builder->CreateICmpULT(a, b);
+    value = Builder->CreateSelect(icmp, a, b);
 
-      // Set the variables to be compared
-      auto a = (phi == nullptr) ? codegen(op->operands[0]) : phi;
-      auto b = codegen(op->operands[i]);
-
-      // Create Condition and CondBranch
-      auto condition = Builder->CreateICmpSLT(a, b);
-      Builder->CreateCondBr(condition, true_bb, false_bb);
-
-      // True case
-      Builder->SetInsertPoint(true_bb);
-      auto inst_a = llvm::dyn_cast<llvm::Instruction>(a);
-      auto val_true = Builder->CreateLoad(inst_a->getOperand(0));
-      Builder->CreateBr(after_bb);
-
-      // False case
-      Builder->SetInsertPoint(false_bb);
-      auto inst_b = llvm::dyn_cast<llvm::Instruction>(b);
-      auto val_false = Builder->CreateLoad(inst_b->getOperand(0));
-
-      Builder->CreateBr(after_bb);
-
-      // After BasicBlock
-      Builder->SetInsertPoint(after_bb);
-
-      // Create PHI node
-      phi = Builder->CreatePHI(a->getType(), 2);
-      phi->addIncoming(val_true, true_bb);
-      phi->addIncoming(val_false, false_bb);
-      value = phi;
+    for (size_t i = 2; i < op->operands.size(); i++) {
+      auto c = codegen(op->operands[i]);
+      icmp =
+          (op->type.isInt()) ? Builder->CreateICmpSLT(value, c) : Builder->CreateICmpULT(value, c);
+      value = Builder->CreateSelect(icmp, value, c);
     }
   }
 }
@@ -402,43 +377,18 @@ void CodeGen_LLVM::visit(const Max* op) {
       value = Builder->CreateMaxNum(value, codegen(op->operands[i]));
     }
   } else {
-    llvm::PHINode* phi = nullptr;
+    auto a = codegen(op->operands[0]);
+    auto b = codegen(op->operands[1]);
 
-    for (size_t i = 1; i < op->operands.size(); i++) {
-      // Create the BasicBlocks
-      auto* true_bb = llvm::BasicBlock::Create(*this->Context, "true_max_bb", this->Func);
-      auto* false_bb = llvm::BasicBlock::Create(*this->Context, "false_max_bb", this->Func);
-      auto* after_bb = llvm::BasicBlock::Create(*this->Context, "after_max_bb", this->Func);
+    llvm::Value* icmp =
+        (op->type.isInt()) ? Builder->CreateICmpSGT(a, b) : Builder->CreateICmpUGT(a, b);
+    value = Builder->CreateSelect(icmp, a, b);
 
-      // Set the variables to be compared
-      auto a = (phi == nullptr) ? codegen(op->operands[0]) : phi;
-      auto b = codegen(op->operands[i]);
-
-      // Create Condition and CondBranch
-      auto condition = Builder->CreateICmpSGT(a, b);
-      Builder->CreateCondBr(condition, true_bb, false_bb);
-
-      // True case
-      Builder->SetInsertPoint(true_bb);
-      auto inst_a = llvm::dyn_cast<llvm::Instruction>(a);
-      auto val_true = Builder->CreateLoad(inst_a->getOperand(0));
-      Builder->CreateBr(after_bb);
-
-      // False case
-      Builder->SetInsertPoint(false_bb);
-      auto inst_b = llvm::dyn_cast<llvm::Instruction>(b);
-      auto val_false = Builder->CreateLoad(inst_b->getOperand(0));
-
-      Builder->CreateBr(after_bb);
-
-      // After BasicBlock
-      Builder->SetInsertPoint(after_bb);
-
-      // Create PHI node
-      phi = Builder->CreatePHI(a->getType(), 2);
-      phi->addIncoming(val_true, true_bb);
-      phi->addIncoming(val_false, false_bb);
-      value = phi;
+    for (size_t i = 2; i < op->operands.size(); i++) {
+      auto c = codegen(op->operands[i]);
+      icmp =
+          (op->type.isInt()) ? Builder->CreateICmpSGT(value, c) : Builder->CreateICmpUGT(value, c);
+      value = Builder->CreateSelect(icmp, value, c);
     }
   }
 }
