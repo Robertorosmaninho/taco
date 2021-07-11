@@ -1,9 +1,9 @@
 #ifdef HAVE_LLVM
 #include <llvm/Bitcode/BitcodeWriter.h>
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
-#include <llvm/IR/Constants.h>
 
 #include "codegen_llvm.h"
 #include "llvm_utils.hpp"
@@ -341,15 +341,14 @@ void CodeGen_LLVM::visit(const Min* op) {
 
   if (op->type.isFloat()) {
     // LLVM's minnum intrinsic only does binary ops
-    value = Builder->CreateMinNum(codegen(op->operands[0]), 
-                                  codegen(op->operands[1]));
-    for (size_t i=2; i<op->operands.size(); i++) {
+    value = Builder->CreateMinNum(codegen(op->operands[0]), codegen(op->operands[1]));
+    for (size_t i = 2; i < op->operands.size(); i++) {
       value = Builder->CreateMinNum(value, codegen(op->operands[i]));
     }
   } else {
     llvm::PHINode* phi = nullptr;
 
-    for (size_t i=1; i<op->operands.size(); i++) { 
+    for (size_t i = 1; i < op->operands.size(); i++) {
       // Create the BasicBlocks
       auto* true_bb = llvm::BasicBlock::Create(*this->Context, "true_min_bb", this->Func);
       auto* false_bb = llvm::BasicBlock::Create(*this->Context, "false_min_bb", this->Func);
@@ -367,13 +366,13 @@ void CodeGen_LLVM::visit(const Min* op) {
       Builder->SetInsertPoint(true_bb);
       auto inst_a = llvm::dyn_cast<llvm::Instruction>(a);
       auto val_true = Builder->CreateLoad(inst_a->getOperand(0));
-       Builder->CreateBr(after_bb);
+      Builder->CreateBr(after_bb);
 
       // False case
       Builder->SetInsertPoint(false_bb);
       auto inst_b = llvm::dyn_cast<llvm::Instruction>(b);
       auto val_false = Builder->CreateLoad(inst_b->getOperand(0));
-    
+
       Builder->CreateBr(after_bb);
 
       // After BasicBlock
@@ -383,7 +382,7 @@ void CodeGen_LLVM::visit(const Min* op) {
       phi = Builder->CreatePHI(a->getType(), 2);
       phi->addIncoming(val_true, true_bb);
       phi->addIncoming(val_false, false_bb);
-      value = phi; 
+      value = phi;
     }
   }
 }
@@ -391,22 +390,21 @@ void CodeGen_LLVM::visit(const Min* op) {
 void CodeGen_LLVM::visit(const Max* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Max");
 
-    if (op->operands.size() == 1) {
+  if (op->operands.size() == 1) {
     value = codegen(op->operands[0]);
     return;
   }
 
   if (op->type.isFloat()) {
     // LLVM's minnum intrinsic only does binary ops
-    value = Builder->CreateMaxNum(codegen(op->operands[0]), 
-                                  codegen(op->operands[1]));
-    for (size_t i=2; i<op->operands.size(); i++) {
+    value = Builder->CreateMaxNum(codegen(op->operands[0]), codegen(op->operands[1]));
+    for (size_t i = 2; i < op->operands.size(); i++) {
       value = Builder->CreateMaxNum(value, codegen(op->operands[i]));
     }
   } else {
     llvm::PHINode* phi = nullptr;
 
-    for (size_t i=1; i<op->operands.size(); i++) { 
+    for (size_t i = 1; i < op->operands.size(); i++) {
       // Create the BasicBlocks
       auto* true_bb = llvm::BasicBlock::Create(*this->Context, "true_max_bb", this->Func);
       auto* false_bb = llvm::BasicBlock::Create(*this->Context, "false_max_bb", this->Func);
@@ -424,13 +422,13 @@ void CodeGen_LLVM::visit(const Max* op) {
       Builder->SetInsertPoint(true_bb);
       auto inst_a = llvm::dyn_cast<llvm::Instruction>(a);
       auto val_true = Builder->CreateLoad(inst_a->getOperand(0));
-       Builder->CreateBr(after_bb);
+      Builder->CreateBr(after_bb);
 
       // False case
       Builder->SetInsertPoint(false_bb);
       auto inst_b = llvm::dyn_cast<llvm::Instruction>(b);
       auto val_false = Builder->CreateLoad(inst_b->getOperand(0));
-    
+
       Builder->CreateBr(after_bb);
 
       // After BasicBlock
@@ -440,9 +438,9 @@ void CodeGen_LLVM::visit(const Max* op) {
       phi = Builder->CreatePHI(a->getType(), 2);
       phi->addIncoming(val_true, true_bb);
       phi->addIncoming(val_false, false_bb);
-      value = phi; 
+      value = phi;
     }
-  } 
+  }
 }
 
 void CodeGen_LLVM::visit(const BitAnd* op) {
@@ -464,9 +462,9 @@ void CodeGen_LLVM::visit(const Eq* op) {
     if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
       if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
         if (FPa->isNaN() || FPb->isNaN())
-          value = Builder->CreateFCmpUEQ(a,b); // ULE means that either operand may be a QNAN.
+          value = Builder->CreateFCmpUEQ(a, b);  // ULE means that either operand may be a QNAN.
         else
-          value = Builder->CreateFCmpOEQ(a,b); // OLE means that neither operand is a QNAN
+          value = Builder->CreateFCmpOEQ(a, b);  // OLE means that neither operand is a QNAN
       }
     }
   } else {
@@ -483,9 +481,9 @@ void CodeGen_LLVM::visit(const Neq* op) {
     if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
       if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
         if (FPa->isNaN() || FPb->isNaN())
-          value = Builder->CreateFCmpONE(a,b); // ULE means that either operand may be a QNAN.
+          value = Builder->CreateFCmpONE(a, b);  // ULE means that either operand may be a QNAN.
         else
-          value = Builder->CreateFCmpONE(a,b); // OLE means that neither operand is a QNAN
+          value = Builder->CreateFCmpONE(a, b);  // OLE means that neither operand is a QNAN
       }
     }
   } else {
@@ -502,9 +500,9 @@ void CodeGen_LLVM::visit(const Gt* op) {
     if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
       if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
         if (FPa->isNaN() || FPb->isNaN())
-          value = Builder->CreateFCmpUGT(a,b); // ULE means that either operand may be a QNAN.
+          value = Builder->CreateFCmpUGT(a, b);  // ULE means that either operand may be a QNAN.
         else
-          value = Builder->CreateFCmpOGT(a,b); // OLE means that neither operand is a QNAN
+          value = Builder->CreateFCmpOGT(a, b);  // OLE means that neither operand is a QNAN
       }
     }
   } else if (op->type.isUInt()) {
@@ -523,9 +521,9 @@ void CodeGen_LLVM::visit(const Lt* op) {
     if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
       if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
         if (FPa->isNaN() || FPb->isNaN())
-          value = Builder->CreateFCmpULT(a,b); // ULE means that either operand may be a QNAN.
+          value = Builder->CreateFCmpULT(a, b);  // ULE means that either operand may be a QNAN.
         else
-          value = Builder->CreateFCmpOLT(a,b); // OLE means that neither operand is a QNAN
+          value = Builder->CreateFCmpOLT(a, b);  // OLE means that neither operand is a QNAN
       }
     }
   } else if (op->type.isUInt()) {
@@ -544,9 +542,9 @@ void CodeGen_LLVM::visit(const Gte* op) {
     if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
       if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
         if (FPa->isNaN() || FPb->isNaN())
-          value = Builder->CreateFCmpUGE(a,b); // ULE means that either operand may be a QNAN.
+          value = Builder->CreateFCmpUGE(a, b);  // ULE means that either operand may be a QNAN.
         else
-          value = Builder->CreateFCmpOGE(a,b); // OLE means that neither operand is a QNAN
+          value = Builder->CreateFCmpOGE(a, b);  // OLE means that neither operand is a QNAN
       }
     }
   } else if (op->type.isUInt()) {
@@ -565,9 +563,9 @@ void CodeGen_LLVM::visit(const Lte* op) {
     if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
       if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
         if (FPa->isNaN() || FPb->isNaN())
-          value = Builder->CreateFCmpULE(a,b); // ULE means that either operand may be a QNAN.
+          value = Builder->CreateFCmpULE(a, b);  // ULE means that either operand may be a QNAN.
         else
-          value = Builder->CreateFCmpOLE(a,b); // OLE means that neither operand is a QNAN
+          value = Builder->CreateFCmpOLE(a, b);  // OLE means that neither operand is a QNAN
       }
     }
   } else if (op->type.isUInt()) {
@@ -609,7 +607,7 @@ void CodeGen_LLVM::visit(const Or* op) {
   // Create the BasicBlocks
   auto* false_bb = llvm::BasicBlock::Create(*this->Context, "false_or_bb", this->Func);
   auto* end_bb = llvm::BasicBlock::Create(*this->Context, "end_or_bb", this->Func);
-  
+
   // Generate first condition
   auto a = codegen(op->a);
   Builder->CreateCondBr(a, false_bb, end_bb);
@@ -629,7 +627,7 @@ void CodeGen_LLVM::visit(const Or* op) {
 
 void CodeGen_LLVM::visit(const Cast* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Cast");
-    if (op->type.isFloat()) {
+  if (op->type.isFloat()) {
     value = Builder->CreateFPCast(codegen(op->a), llvmTypeOf(op->type));
   } else {
     auto a = codegen(op->a);
@@ -679,22 +677,21 @@ void CodeGen_LLVM::visit(const IfThenElse* op) {
 }
 
 namespace {
-  Stmt caseToIfThenElse(std::vector<std::pair<Expr,Stmt>> clauses, bool alwaysMatch) {
-    std::vector<std::pair<Expr,Stmt>> rest(clauses.begin()+1, clauses.end());
-    if (rest.size() == 0) {
-      // if alwaysMatch is true, then this one goes into the else clause,
-      // otherwise, we generate an empty else clause
-      return !alwaysMatch ? clauses[0].second :
-        IfThenElse::make(clauses[0].first, clauses[0].second, Comment::make(""));
-    } else {
-      return IfThenElse::make(clauses[0].first,
-                            clauses[0].second,
-                            caseToIfThenElse(rest, alwaysMatch));
-    }
+Stmt caseToIfThenElse(std::vector<std::pair<Expr, Stmt>> clauses, bool alwaysMatch) {
+  std::vector<std::pair<Expr, Stmt>> rest(clauses.begin() + 1, clauses.end());
+  if (rest.size() == 0) {
+    // if alwaysMatch is true, then this one goes into the else clause,
+    // otherwise, we generate an empty else clause
+    return !alwaysMatch ? clauses[0].second
+                        : IfThenElse::make(clauses[0].first, clauses[0].second, Comment::make(""));
+  } else {
+    return IfThenElse::make(
+        clauses[0].first, clauses[0].second, caseToIfThenElse(rest, alwaysMatch));
   }
-} // anonymous namespace
+}
+}  // anonymous namespace
 
-void CodeGen_LLVM::visit(const Case* op) { // Not tested
+void CodeGen_LLVM::visit(const Case* op) {  // Not tested
   auto _ = CodeGen_LLVM::IndentHelper(this, "Case");
   codegen(caseToIfThenElse(op->clauses, op->alwaysMatch));
 }
@@ -762,7 +759,7 @@ void CodeGen_LLVM::visit(const For* op) {
   pushSymbol(var->name, phi);
 
   // Compute exit condition
-  auto cond = this->Builder->CreateICmpSLT(phi, end); // Always less then?
+  auto cond = this->Builder->CreateICmpSLT(phi, end);  // Always less then?
   this->Builder->CreateCondBr(cond, body, exit);
 
   // Compute increment and jump back to header
@@ -785,14 +782,14 @@ void CodeGen_LLVM::visit(const For* op) {
 
 void CodeGen_LLVM::visit(const While* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "While");
-  taco_tassert(op->kind == LoopKind::Serial) <<
-    "Only serial loop codegen supported by LLVM backend";
+  taco_tassert(op->kind == LoopKind::Serial)
+      << "Only serial loop codegen supported by LLVM backend";
 
   // Create a new basic block for the loop
   llvm::BasicBlock* header = llvm::BasicBlock::Create(*this->Context, "while_header", this->Func);
   llvm::BasicBlock* loop = llvm::BasicBlock::Create(*this->Context, "while_body", this->Func);
   llvm::BasicBlock* exit = llvm::BasicBlock::Create(*this->Context, "while_end", this->Func);
-  
+
   // pre_header -> header
   Builder->CreateBr(header);
 
@@ -924,12 +921,11 @@ void CodeGen_LLVM::visit(const Function* func) {
 void CodeGen_LLVM::visit(const VarDecl* op) {
   const Var* lhs = op->var.as<Var>();
   auto _ = CodeGen_LLVM::IndentHelper(this, "VarDecl", lhs->name);
-  llvm::Value *ptr = nullptr;
-  if (containsSymbol(lhs->name)){
+  llvm::Value* ptr = nullptr;
+  if (containsSymbol(lhs->name)) {
     ptr = getSymbol(lhs->name);
-  }
-  else {
-  // Create the pointer
+  } else {
+    // Create the pointer
     llvm::Type* rhs_llvm_type = llvmTypeOf(op->rhs.type());
     ptr = this->Builder->CreateAlloca(rhs_llvm_type);
   }
@@ -945,8 +941,8 @@ void CodeGen_LLVM::visit(const Assign* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Assign");
 
   const Var* lhs = op->lhs.as<Var>();
-  auto *rhs = codegen(op->rhs);
-  auto *ptr = getSymbol(lhs->name);
+  auto* rhs = codegen(op->rhs);
+  auto* ptr = getSymbol(lhs->name);
   this->Builder->CreateStore(rhs, ptr);
 }
 
@@ -956,37 +952,37 @@ void CodeGen_LLVM::visit(const Yield* op) {
 }
 
 void CodeGen_LLVM::visit(const Allocate* op) {
-auto _ = CodeGen_LLVM::IndentHelper(this, "Warning: Missing Allocate implementation");
-/*
-  auto _ = CodeGen_LLVM::IndentHelper(this, "Allocate");
-  auto voidptr = get_void_ptr_type(*this->Context);
-  auto i64 = get_int_type(64, *this->Context);
-  auto i32p = get_int_ptr_type(32, *this->Context);
+  auto _ = CodeGen_LLVM::IndentHelper(this, "Warning: Missing Allocate implementation");
+  /*
+    auto _ = CodeGen_LLVM::IndentHelper(this, "Allocate");
+    auto voidptr = get_void_ptr_type(*this->Context);
+    auto i64 = get_int_type(64, *this->Context);
+    auto i32p = get_int_ptr_type(32, *this->Context);
 
-  auto alloca = this->Builder->CreateAlloca(i32p);
-//  auto var = codegen(op->var);
-  auto num_elements = codegen(op->num_elements);
-  auto sext_num_elements = this->Builder->CreateSExt(num_elements, i64);
-  
-  if (op->is_realloc) { 
-    auto size = this->Builder->CreateMul(
-        sext_num_elements, get_int_constant(64, 4, *this->Context), "realloc.size");
+    auto alloca = this->Builder->CreateAlloca(i32p);
+  //  auto var = codegen(op->var);
+    auto num_elements = codegen(op->num_elements);
+    auto sext_num_elements = this->Builder->CreateSExt(num_elements, i64);
 
-    auto ret = emitExternalCall("realloc", voidptr, {i64}, {size});
-    ret->setName("realloc.ret");
-    
-    auto bitcast = this->Builder->CreateBitCast(ret, i32p);
-    this->Builder->CreateStore(bitcast, alloca);
-  } else {
-    auto size = this->Builder->CreateMul(
-      sext_num_elements, get_int_constant(64, 4, *this->Context));
-      
-   auto call = emitExternalCall("malloc", voidptr, {i64}, {size});
-   call->setName("calloc.ret");
+    if (op->is_realloc) {
+      auto size = this->Builder->CreateMul(
+          sext_num_elements, get_int_constant(64, 4, *this->Context), "realloc.size");
 
-   auto bitcast = this->Builder->CreateBitCast(call, i32p);
-   this->Builder->CreateStore(bitcast, alloca);
-  }*/
+      auto ret = emitExternalCall("realloc", voidptr, {i64}, {size});
+      ret->setName("realloc.ret");
+
+      auto bitcast = this->Builder->CreateBitCast(ret, i32p);
+      this->Builder->CreateStore(bitcast, alloca);
+    } else {
+      auto size = this->Builder->CreateMul(
+        sext_num_elements, get_int_constant(64, 4, *this->Context));
+
+     auto call = emitExternalCall("malloc", voidptr, {i64}, {size});
+     call->setName("calloc.ret");
+
+     auto bitcast = this->Builder->CreateBitCast(call, i32p);
+     this->Builder->CreateStore(bitcast, alloca);
+    }*/
 }
 
 void CodeGen_LLVM::visit(const Free* op) {
@@ -999,8 +995,8 @@ void CodeGen_LLVM::visit(const Comment* op) {
   // no op, do nothing
 }
 
-void CodeGen_LLVM::visit(const BlankLine *op) {
-// no-op, do nothing
+void CodeGen_LLVM::visit(const BlankLine* op) {
+  // no-op, do nothing
 }
 
 void CodeGen_LLVM::visit(const Break* op) {
@@ -1068,9 +1064,12 @@ void CodeGen_LLVM::visit(const GetProperty* op) {
       auto* mode = get_int_constant(32, op->mode, *this->Context);
       auto* index = get_int_constant(32, op->index, *this->Context);
 
-      auto* load1 = this->Builder->CreateLoad(this->Builder->CreateStructGEP(tensor, (int)TensorProperty::Indices));  // i8***
-      auto* load2 = this->Builder->CreateLoad(this->Builder->CreateInBoundsGEP(load1, mode));  // i8**
-      auto* load3 = this->Builder->CreateLoad(this->Builder->CreateInBoundsGEP(load2, index));  // i8*
+      auto* load1 = this->Builder->CreateLoad(
+          this->Builder->CreateStructGEP(tensor, (int) TensorProperty::Indices));  // i8***
+      auto* load2 =
+          this->Builder->CreateLoad(this->Builder->CreateInBoundsGEP(load1, mode));  // i8**
+      auto* load3 =
+          this->Builder->CreateLoad(this->Builder->CreateInBoundsGEP(load2, index));  // i8*
       value = this->Builder->CreateBitCast(load3, i32p);
       break;
     }
