@@ -333,11 +333,7 @@ void CodeGen_LLVM::visit(const Rem* op) {
 
 void CodeGen_LLVM::visit(const Min* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Min");
-
-  if (op->operands.size() == 1) {
-    value = codegen(op->operands[0]);
-    return;
-  }
+  taco_iassert(op->operands.size() >= 2);
 
   if (op->type.isFloat()) {
     // LLVM's minnum intrinsic only does binary ops
@@ -349,26 +345,28 @@ void CodeGen_LLVM::visit(const Min* op) {
     auto a = codegen(op->operands[0]);
     auto b = codegen(op->operands[1]);
 
+    llvm::Value* allocaValue = nullptr;
+    if (op->operands.size() > 2)
+      allocaValue = Builder->CreateAlloca(a->getType());
+
     llvm::Value* icmp =
         (op->type.isInt()) ? Builder->CreateICmpSLT(a, b) : Builder->CreateICmpULT(a, b);
     value = Builder->CreateSelect(icmp, a, b);
 
     for (size_t i = 2; i < op->operands.size(); i++) {
+      Builder->CreateStore(value, allocaValue);
+      auto minValue = Builder->CreateLoad(allocaValue);
       auto c = codegen(op->operands[i]);
-      icmp =
-          (op->type.isInt()) ? Builder->CreateICmpSLT(value, c) : Builder->CreateICmpULT(value, c);
-      value = Builder->CreateSelect(icmp, value, c);
+      icmp = (op->type.isInt()) ? Builder->CreateICmpSLT(minValue, c)
+                                : Builder->CreateICmpULT(minValue, c);
+      value = Builder->CreateSelect(icmp, minValue, c);
     }
   }
 }
 
 void CodeGen_LLVM::visit(const Max* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Max");
-
-  if (op->operands.size() == 1) {
-    value = codegen(op->operands[0]);
-    return;
-  }
+  taco_iassert(op->operands.size() >= 2);
 
   if (op->type.isFloat()) {
     // LLVM's minnum intrinsic only does binary ops
@@ -380,15 +378,21 @@ void CodeGen_LLVM::visit(const Max* op) {
     auto a = codegen(op->operands[0]);
     auto b = codegen(op->operands[1]);
 
+    llvm::Value* allocaValue = nullptr;
+    if (op->operands.size() > 2)
+      allocaValue = Builder->CreateAlloca(a->getType());
+
     llvm::Value* icmp =
         (op->type.isInt()) ? Builder->CreateICmpSGT(a, b) : Builder->CreateICmpUGT(a, b);
     value = Builder->CreateSelect(icmp, a, b);
 
     for (size_t i = 2; i < op->operands.size(); i++) {
+      Builder->CreateStore(value, allocaValue);
+      auto maxValue = Builder->CreateLoad(allocaValue);
       auto c = codegen(op->operands[i]);
-      icmp =
-          (op->type.isInt()) ? Builder->CreateICmpSGT(value, c) : Builder->CreateICmpUGT(value, c);
-      value = Builder->CreateSelect(icmp, value, c);
+      icmp = (op->type.isInt()) ? Builder->CreateICmpSGT(maxValue, c)
+                                : Builder->CreateICmpUGT(maxValue, c);
+      value = Builder->CreateSelect(icmp, maxValue, c);
     }
   }
 }
@@ -871,7 +875,7 @@ void CodeGen_LLVM::visit(const Function* func) {
 void CodeGen_LLVM::visit(const VarDecl* op) {
   const Var* lhs = op->var.as<Var>();
   auto _ = CodeGen_LLVM::IndentHelper(this, "VarDecl", lhs->name);
-  
+
   llvm::Value* ptr = nullptr;
   if (containsSymbol(lhs->name)) {
     ptr = getSymbol(lhs->name);
@@ -880,7 +884,7 @@ void CodeGen_LLVM::visit(const VarDecl* op) {
     llvm::Type* rhs_llvm_type = llvmTypeOf(op->rhs.type());
     ptr = this->Builder->CreateAlloca(rhs_llvm_type);
   }
- 
+
   // visit op rhs to produce a value
   // codegen ensures that a LLVM value was produced
   this->Builder->CreateStore(codegen(op->rhs), ptr);
