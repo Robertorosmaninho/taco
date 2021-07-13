@@ -756,10 +756,10 @@ void CodeGen_LLVM::visit(const While* op) {
   Builder->SetInsertPoint(loop);
   codegen(op->contents);
 
-  // create unconditional branch to check
+  // create unconditional branch to header 
   Builder->CreateBr(header);
 
-  // seet the insert point for the exit loop
+  // set the insert point for the exit loop
   Builder->SetInsertPoint(exit);
 }
 
