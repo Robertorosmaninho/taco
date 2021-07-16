@@ -455,12 +455,17 @@ void CodeGen_LLVM::visit(const Eq* op) {
     if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
       if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
         if (FPa->isNaN() || FPb->isNaN())
-          value = Builder->CreateFCmpUEQ(a, b);  // ULE means that either operand may be a QNAN.
+          value = Builder->CreateFCmpUEQ(a, b);  // UEQ means that either operand may be a QNAN.
         else
-          value = Builder->CreateFCmpOEQ(a, b);  // OLE means that neither operand is a QNAN
+          value = Builder->CreateFCmpOEQ(a, b);  // OEQ means that neither operand is a QNAN
+      } else {
+        value = Builder->CreateFCmpUEQ(a, b);
       }
+    } else {
+      value = Builder->CreateFCmpUEQ(a, b);
     }
   } else {
+    taco_iassert(op->type.isInt() || op->type.isUInt()) << "op->type is " << op->type;
     value = Builder->CreateICmpEQ(a, b);
   }
 }
@@ -474,10 +479,14 @@ void CodeGen_LLVM::visit(const Neq* op) {
     if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
       if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
         if (FPa->isNaN() || FPb->isNaN())
-          value = Builder->CreateFCmpONE(a, b);  // ULE means that either operand may be a QNAN.
+          value = Builder->CreateFCmpUNE(a, b);  // UNE means that either operand may be a QNAN.
         else
-          value = Builder->CreateFCmpONE(a, b);  // OLE means that neither operand is a QNAN
+          value = Builder->CreateFCmpONE(a, b);  // ONE means that neither operand is a QNAN
+      } else {
+        value = Builder->CreateFCmpUNE(a, b);
       }
+    } else {
+      value = Builder->CreateFCmpUNE(a, b);
     }
   } else {
     value = Builder->CreateICmpNE(a, b);
@@ -493,10 +502,14 @@ void CodeGen_LLVM::visit(const Gt* op) {
     if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
       if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
         if (FPa->isNaN() || FPb->isNaN())
-          value = Builder->CreateFCmpUGT(a, b);  // ULE means that either operand may be a QNAN.
+          value = Builder->CreateFCmpUGT(a, b);  // UGT means that either operand may be a QNAN.
         else
-          value = Builder->CreateFCmpOGT(a, b);  // OLE means that neither operand is a QNAN
+          value = Builder->CreateFCmpOGT(a, b);  // OGT means that neither operand is a QNAN
+      } else {
+        value = Builder->CreateFCmpUGT(a, b);
       }
+    } else {
+      value = Builder->CreateFCmpUGT(a, b);
     }
   } else if (op->type.isUInt()) {
     value = Builder->CreateICmpUGT(a, b);
@@ -514,10 +527,14 @@ void CodeGen_LLVM::visit(const Lt* op) {
     if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
       if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
         if (FPa->isNaN() || FPb->isNaN())
-          value = Builder->CreateFCmpULT(a, b);  // ULE means that either operand may be a QNAN.
+          value = Builder->CreateFCmpULT(a, b);  // ULT means that either operand may be a QNAN.
         else
-          value = Builder->CreateFCmpOLT(a, b);  // OLE means that neither operand is a QNAN
+          value = Builder->CreateFCmpOLT(a, b);  // OLT means that neither operand is a QNAN
+      } else {
+        value = Builder->CreateFCmpULT(a, b); 
       }
+    } else {
+      value = Builder->CreateFCmpULT(a, b); 
     }
   } else if (op->type.isUInt()) {
     value = Builder->CreateICmpULT(a, b);
@@ -535,10 +552,14 @@ void CodeGen_LLVM::visit(const Gte* op) {
     if (auto* FPa = llvm::dyn_cast<llvm::ConstantFP>(a)) {
       if (auto* FPb = llvm::dyn_cast<llvm::ConstantFP>(b)) {
         if (FPa->isNaN() || FPb->isNaN())
-          value = Builder->CreateFCmpUGE(a, b);  // ULE means that either operand may be a QNAN.
+          value = Builder->CreateFCmpUGE(a, b);  // UGE means that either operand may be a QNAN.
         else
-          value = Builder->CreateFCmpOGE(a, b);  // OLE means that neither operand is a QNAN
+          value = Builder->CreateFCmpOGE(a, b);  // OGE means that neither operand is a QNAN
+      } else {
+        value = Builder->CreateFCmpUGE(a, b);
       }
+    } else {
+      value = Builder->CreateFCmpUGE(a, b);
     }
   } else if (op->type.isUInt()) {
     value = Builder->CreateICmpUGE(a, b);
@@ -559,7 +580,11 @@ void CodeGen_LLVM::visit(const Lte* op) {
           value = Builder->CreateFCmpULE(a, b);  // ULE means that either operand may be a QNAN.
         else
           value = Builder->CreateFCmpOLE(a, b);  // OLE means that neither operand is a QNAN
+      } else {
+        value = Builder->CreateFCmpULE(a, b);
       }
+    } else {
+      value = Builder->CreateFCmpULE(a, b);
     }
   } else if (op->type.isUInt()) {
     value = Builder->CreateICmpULE(a, b);
