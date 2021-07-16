@@ -203,6 +203,45 @@ llvm::Value* CodeGen_LLVM::emitExternalCall(const std::string& funcName,
   return this->Builder->CreateCall(func, args);
 }
 
+llvm::Function* CodeGen_LLVM::getOrInsertGetIndicesFunction() {
+  const std::string func_name = "get_indices";
+  auto func = Module->getNamedValue(func_name);
+  if (func) {
+    return llvm::cast<llvm::Function>(func);
+  }
+
+  auto bb = Builder->GetInsertBlock();
+  auto insert_point = Builder->GetInsertPoint();
+
+  auto i32 = get_int_type(32, *Context);
+  auto i32p = get_int_ptr_type(32, *Context);
+
+  auto Fn =
+      llvm::Function::Create(llvm::FunctionType::get(i32p, {tensorStructPtr, i32, i32}, false),
+                             llvm::GlobalValue::InternalLinkage,
+                             func_name,
+                             Module.get());
+  Builder->SetInsertPoint(llvm::BasicBlock::Create(*Context, "entry", Fn));
+
+  // name the arguments
+  auto tensor = Fn->getArg(0);
+  tensor->setName("tensor");
+  auto mode = Fn->getArg(1);
+  mode->setName("mode");
+  auto index = Fn->getArg(2);
+  index->setName("index");
+
+  auto* load1 = Builder->CreateLoad(
+      Builder->CreateStructGEP(tensor, (int) TensorProperty::Indices));         // i8***
+  auto* load2 = Builder->CreateLoad(Builder->CreateInBoundsGEP(load1, mode));   // i8**
+  auto* load3 = Builder->CreateLoad(Builder->CreateInBoundsGEP(load2, index));  // i8*
+  Builder->CreateRet(Builder->CreateBitCast(load3, i32p));
+
+  // restore the original inserting point
+  Builder->SetInsertPoint(bb, insert_point);
+
+  return Fn;
+}
 void CodeGen_LLVM::compile(Stmt stmt, bool isFirst) {
   init_codegen();
   stmt.accept(this);
@@ -997,7 +1036,6 @@ void CodeGen_LLVM::visit(const GetProperty* op) {
   llvm::Value* tensor = getSymbol(name);
 
   auto* tensorType_pp = llvmTypeOf(op->type)->getPointerTo()->getPointerTo();  // TensorType**
-  auto* i32p = get_int_ptr_type(32, *this->Context);
 
   switch (op->property) {
     case TensorProperty::Dimension: {
@@ -1020,13 +1058,8 @@ void CodeGen_LLVM::visit(const GetProperty* op) {
       auto* mode = get_int_constant(32, op->mode, *this->Context);
       auto* index = get_int_constant(32, op->index, *this->Context);
 
-      auto* load1 = this->Builder->CreateLoad(
-          this->Builder->CreateStructGEP(tensor, (int) TensorProperty::Indices));  // i8***
-      auto* load2 =
-          this->Builder->CreateLoad(this->Builder->CreateInBoundsGEP(load1, mode));  // i8**
-      auto* load3 =
-          this->Builder->CreateLoad(this->Builder->CreateInBoundsGEP(load2, index));  // i8*
-      value = this->Builder->CreateBitCast(load3, i32p);
+      auto get_indices_fn = getOrInsertGetIndicesFunction();
+      value = Builder->CreateCall(get_indices_fn, {tensor, mode, index});
       break;
     }
     case TensorProperty::ValuesSize:
