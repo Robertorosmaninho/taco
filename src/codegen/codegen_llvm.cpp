@@ -595,14 +595,16 @@ void CodeGen_LLVM::visit(const Lte* op) {
 
 void CodeGen_LLVM::visit(const And* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "And");
+
+  // Generate first condition
+  auto a = codegen(op->a);
   auto* actual_bb = Builder->GetInsertBlock();
 
   // Create the BasicBlocks
   auto* true_bb = llvm::BasicBlock::Create(*this->Context, "true_and_bb", this->Func);
   auto* end_bb = llvm::BasicBlock::Create(*this->Context, "end_and_bb", this->Func);
 
-  // Generate first condition
-  auto a = codegen(op->a);
+  // Create the conditional branch for the two new blocks
   Builder->CreateCondBr(a, true_bb, end_bb);
 
   // If true -> Generate sencond condition
