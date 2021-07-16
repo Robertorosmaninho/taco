@@ -374,16 +374,16 @@ void CodeGen_LLVM::visit(const Min* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Min");
   taco_iassert(op->operands.size() >= 2);
 
+  auto a = codegen(op->operands[0]);
+  auto b = codegen(op->operands[1]);
+
   if (op->type.isFloat()) {
     // LLVM's minnum intrinsic only does binary ops
-    value = Builder->CreateMinNum(codegen(op->operands[0]), codegen(op->operands[1]));
+    value = Builder->CreateMinNum(a, b);
     for (size_t i = 2; i < op->operands.size(); i++) {
       value = Builder->CreateMinNum(value, codegen(op->operands[i]));
     }
   } else {
-    auto a = codegen(op->operands[0]);
-    auto b = codegen(op->operands[1]);
-
     llvm::Value* allocaValue = nullptr;
     if (op->operands.size() > 2)
       allocaValue = Builder->CreateAlloca(a->getType());
@@ -407,16 +407,16 @@ void CodeGen_LLVM::visit(const Max* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Max");
   taco_iassert(op->operands.size() >= 2);
 
+  auto a = codegen(op->operands[0]);
+  auto b = codegen(op->operands[1]);
+
   if (op->type.isFloat()) {
     // LLVM's minnum intrinsic only does binary ops
-    value = Builder->CreateMaxNum(codegen(op->operands[0]), codegen(op->operands[1]));
+    value = Builder->CreateMaxNum(a, b);
     for (size_t i = 2; i < op->operands.size(); i++) {
       value = Builder->CreateMaxNum(value, codegen(op->operands[i]));
     }
   } else {
-    auto a = codegen(op->operands[0]);
-    auto b = codegen(op->operands[1]);
-
     llvm::Value* allocaValue = nullptr;
     if (op->operands.size() > 2)
       allocaValue = Builder->CreateAlloca(a->getType());
