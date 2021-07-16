@@ -622,14 +622,16 @@ void CodeGen_LLVM::visit(const And* op) {
 
 void CodeGen_LLVM::visit(const Or* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Or");
+
+  // Generate first condition
+  auto a = codegen(op->a);
   auto* actual_bb = Builder->GetInsertBlock();
 
   // Create the BasicBlocks
   auto* false_bb = llvm::BasicBlock::Create(*this->Context, "false_or_bb", this->Func);
   auto* end_bb = llvm::BasicBlock::Create(*this->Context, "end_or_bb", this->Func);
 
-  // Generate first condition
-  auto a = codegen(op->a);
+  // Create the conditional branch for the two new blocks
   Builder->CreateCondBr(a, false_bb, end_bb);
 
   // If false -> Generate the sencond condition to test
