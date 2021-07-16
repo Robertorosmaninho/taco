@@ -465,7 +465,7 @@ void CodeGen_LLVM::visit(const Eq* op) {
       value = Builder->CreateFCmpUEQ(a, b);
     }
   } else {
-    taco_iassert(op->type.isInt() || op->type.isUInt()) << "op->type is " << op->type;
+    taco_iassert(op->type.isInt() || op->type.isUInt() || op->type.isBool()) << "op->type is " << op->type;
     value = Builder->CreateICmpEQ(a, b);
   }
 }
@@ -489,7 +489,7 @@ void CodeGen_LLVM::visit(const Neq* op) {
       value = Builder->CreateFCmpUNE(a, b);
     }
   } else {
-    taco_iassert(op->type.isInt() || op->type.isUInt()) << "op->type is " << op->type;
+    taco_iassert(op->type.isInt() || op->type.isUInt() || op->type.isBool()) << "op->type is " << op->type;
     value = Builder->CreateICmpNE(a, b);
   }
 }
@@ -532,10 +532,10 @@ void CodeGen_LLVM::visit(const Lt* op) {
         else
           value = Builder->CreateFCmpOLT(a, b);  // OLT means that neither operand is a QNAN
       } else {
-        value = Builder->CreateFCmpULT(a, b); 
+        value = Builder->CreateFCmpULT(a, b);
       }
     } else {
-      value = Builder->CreateFCmpULT(a, b); 
+      value = Builder->CreateFCmpULT(a, b);
     }
   } else if (op->type.isUInt()) {
     value = Builder->CreateICmpULT(a, b);
@@ -977,37 +977,8 @@ void CodeGen_LLVM::visit(const Yield* op) {
 }
 
 void CodeGen_LLVM::visit(const Allocate* op) {
-  auto _ = CodeGen_LLVM::IndentHelper(this, "Warning: Missing Allocate implementation");
-  /*
-    auto _ = CodeGen_LLVM::IndentHelper(this, "Allocate");
-    auto voidptr = get_void_ptr_type(*this->Context);
-    auto i64 = get_int_type(64, *this->Context);
-    auto i32p = get_int_ptr_type(32, *this->Context);
-
-    auto alloca = this->Builder->CreateAlloca(i32p);
-  //  auto var = codegen(op->var);
-    auto num_elements = codegen(op->num_elements);
-    auto sext_num_elements = this->Builder->CreateSExt(num_elements, i64);
-
-    if (op->is_realloc) {
-      auto size = this->Builder->CreateMul(
-          sext_num_elements, get_int_constant(64, 4, *this->Context), "realloc.size");
-
-      auto ret = emitExternalCall("realloc", voidptr, {i64}, {size});
-      ret->setName("realloc.ret");
-
-      auto bitcast = this->Builder->CreateBitCast(ret, i32p);
-      this->Builder->CreateStore(bitcast, alloca);
-    } else {
-      auto size = this->Builder->CreateMul(
-        sext_num_elements, get_int_constant(64, 4, *this->Context));
-
-     auto call = emitExternalCall("malloc", voidptr, {i64}, {size});
-     call->setName("calloc.ret");
-
-     auto bitcast = this->Builder->CreateBitCast(call, i32p);
-     this->Builder->CreateStore(bitcast, alloca);
-    }*/
+  auto _ = CodeGen_LLVM::IndentHelper(this, "Allocate");
+  taco_uwarning << "Missing LLVM implementation for Allocate opcode" << std::endl;
 }
 
 void CodeGen_LLVM::visit(const Free* op) {
