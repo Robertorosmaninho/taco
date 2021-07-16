@@ -607,7 +607,7 @@ void CodeGen_LLVM::visit(const And* op) {
   // Create the conditional branch for the two new blocks
   Builder->CreateCondBr(a, true_bb, end_bb);
 
-  // If true -> Generate sencond condition
+  // If true -> Generate second condition
   Builder->SetInsertPoint(true_bb);
   auto b = codegen(op->b);
   Builder->CreateBr(end_bb);
@@ -634,7 +634,7 @@ void CodeGen_LLVM::visit(const Or* op) {
   // Create the conditional branch for the two new blocks
   Builder->CreateCondBr(a, false_bb, end_bb);
 
-  // If false -> Generate the sencond condition to test
+  // If false -> Generate the second condition to test
   Builder->SetInsertPoint(false_bb);
   auto b = codegen(op->b);
   Builder->CreateBr(end_bb);
