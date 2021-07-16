@@ -991,6 +991,7 @@ void CodeGen_LLVM::visit(const Comment* op) {
 }
 
 void CodeGen_LLVM::visit(const BlankLine* op) {
+  auto _ = CodeGen_LLVM::IndentHelper(this, "BlankLine");
   // no-op, do nothing
 }
 
