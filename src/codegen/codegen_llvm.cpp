@@ -489,6 +489,7 @@ void CodeGen_LLVM::visit(const Neq* op) {
       value = Builder->CreateFCmpUNE(a, b);
     }
   } else {
+    taco_iassert(op->type.isInt() || op->type.isUInt()) << "op->type is " << op->type;
     value = Builder->CreateICmpNE(a, b);
   }
 }
