@@ -242,6 +242,7 @@ llvm::Function* CodeGen_LLVM::getOrInsertGetIndicesFunction() {
 
   return Fn;
 }
+
 void CodeGen_LLVM::compile(Stmt stmt, bool isFirst) {
   init_codegen();
   stmt.accept(this);
