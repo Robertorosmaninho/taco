@@ -7,9 +7,10 @@ using namespace taco;
 int main() {
   // Create formats
   Format list({Sparse});
- Create tensors
-  Tensor<> A({3}, list);
-  Tensor<i> B({3}, list);
+ 
+  //Create tensors
+  Tensor<int32_t> A({3}, list);
+  Tensor<int32_t> B({3}, list);
   Tensor<int32_t> C({3}, list);
 
   // Insert data into B
