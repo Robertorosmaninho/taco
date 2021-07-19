@@ -62,7 +62,8 @@ ErrorReport::ErrorReport(const char *file, const char *func, int line,
 void ErrorReport::explodeWithException() {
   TacoException e = TacoException(msg->str());
   delete msg;
-  throw e;
+  if (!warning)
+    throw e;
 }
 
 }
