@@ -1,7 +1,7 @@
 #include "taco/error.h"
 
-#include <cstdlib>
 #include <iostream>
+#include <cstdlib>
 
 using namespace std;
 
@@ -13,21 +13,12 @@ const char* TacoException::what() const noexcept {
   return message.c_str();
 }
 
-ErrorReport::ErrorReport(const char* file,
-                         const char* func,
-                         int line,
-                         bool condition,
-                         const char* conditionString,
-                         Kind kind,
-                         bool warning)
-    : msg(NULL)
-    , file(file)
-    , func(func)
-    , line(line)
-    , condition(condition)
-    , conditionString(conditionString)
-    , kind(kind)
-    , warning(warning) {
+
+ErrorReport::ErrorReport(const char *file, const char *func, int line,
+                         bool condition, const char *conditionString,
+                         Kind kind, bool warning)
+    : msg(NULL), file(file), func(func), line(line), condition(condition),
+      conditionString(conditionString), kind(kind), warning(warning) {
   if (condition) {
     return;
   }
@@ -51,7 +42,7 @@ ErrorReport::ErrorReport(const char* file,
       (*msg) << endl << "Please report it to developers";
 
       if (conditionString) {
-        (*msg) << endl << " Condition failed: " << conditionString;
+        (*msg)  << endl << " Condition failed: " << conditionString;
       }
       (*msg) << endl;
       break;
@@ -71,8 +62,7 @@ ErrorReport::ErrorReport(const char* file,
 void ErrorReport::explodeWithException() {
   TacoException e = TacoException(msg->str());
   delete msg;
-  if (!warning)
-    throw e;
+  throw e;
 }
 
-}  // namespace taco
+}
