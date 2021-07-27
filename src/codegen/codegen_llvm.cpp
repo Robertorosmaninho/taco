@@ -148,6 +148,8 @@ llvm::Type* CodeGen_LLVM::llvmTypeOf(Datatype t) {
     }
   } else if (t.isInt()) {
     return llvm::Type::getIntNTy(*this->Context, t.getNumBits());
+  } else if (t.isBool()) {
+    return get_int_type(1, *this->Context);
   } else {
     taco_ierror << "Unable to find llvm type for " << t;
     return nullptr;
@@ -309,7 +311,10 @@ void CodeGen_LLVM::visit(const Literal* e) {
       default:
         taco_ierror << "Unable to generate LLVM for literal " << e;
     }
-  } else {
+  } else if (e->type.isBool()) {
+    value = get_int_constant(1, e->getValue<bool>(), *Context);
+  } 
+  else {
     taco_ierror << "Unable to generate LLVM for literal " << e;
   }
 }
@@ -326,7 +331,11 @@ void CodeGen_LLVM::visit(const Var* op) {
 
 void CodeGen_LLVM::visit(const Neg* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Neg");
-  throw logic_error("Not Implemented for Neg.");
+  auto* a = codegen(op->a);
+  if (op->type.isFloat())
+    value = this->Builder->CreateFNeg(a);
+  else
+    value = this->Builder->CreateNeg(a);
 }
 
 void CodeGen_LLVM::visit(const Sqrt* op) {
@@ -347,7 +356,12 @@ void CodeGen_LLVM::visit(const Add* op) {
 
 void CodeGen_LLVM::visit(const Sub* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Sub");
-  throw logic_error("Not Implemented for Sub.");
+  auto* a = codegen(op->a);
+  auto* b = codegen(op->b);
+  if (op->type.isFloat())
+    value = this->Builder->CreateFSub(a, b);
+  else
+    value = this->Builder->CreateSub(a, b);
 }
 
 void CodeGen_LLVM::visit(const Mul* op) {
@@ -363,12 +377,34 @@ void CodeGen_LLVM::visit(const Mul* op) {
 
 void CodeGen_LLVM::visit(const Div* op) {
   auto _ = CodeGen_LLVM::IndentHelper(this, "Div");
-  throw logic_error("Not Implemented for Div.");
+  auto* a = codegen(op->a);
+  auto* b = codegen(op->b);
+
+  if (op->type.isFloat())
+    value = this->Builder->CreateFDiv(a, b);
+  else if (op->type.isInt())
+    value = this->Builder->CreateSDiv(a, b);
+  else if (op->type.isUInt())
+    value = this->Builder->CreateUDiv(a, b);
+  else
+    throw logic_error(
+        "Not Implemented Div for this type, only float, int and uint type are available!");
 }
 
-void CodeGen_LLVM::visit(const Rem* op) {
+void CodeGen_LLVM::visit(const Rem* op) { // TODO: test it
   auto _ = CodeGen_LLVM::IndentHelper(this, "Rem");
-  throw logic_error("Not Implemented for Rem.");
+    auto* a = codegen(op->a); 
+  auto* b = codegen(op->b);
+
+  if (op->type.isFloat())
+    value = this->Builder->CreateFRem(a, b);
+  else if (op->type.isInt())
+    value = this->Builder->CreateSRem(a, b);
+  else if (op->type.isUInt())
+    value = this->Builder->CreateURem(a, b);
+  else
+    throw logic_error(
+        "Not Implemented Rem for this type, only float, int and uint type are available!");
 }
 
 void CodeGen_LLVM::visit(const Min* op) {
@@ -466,7 +502,8 @@ void CodeGen_LLVM::visit(const Eq* op) {
       value = Builder->CreateFCmpUEQ(a, b);
     }
   } else {
-    taco_iassert(op->type.isInt() || op->type.isUInt() || op->type.isBool()) << "op->type is " << op->type;
+    taco_iassert(op->type.isInt() || op->type.isUInt() || op->type.isBool())
+        << "op->type is " << op->type;
     value = Builder->CreateICmpEQ(a, b);
   }
 }
@@ -490,7 +527,8 @@ void CodeGen_LLVM::visit(const Neq* op) {
       value = Builder->CreateFCmpUNE(a, b);
     }
   } else {
-    taco_iassert(op->type.isInt() || op->type.isUInt() || op->type.isBool()) << "op->type is " << op->type;
+    taco_iassert(op->type.isInt() || op->type.isUInt() || op->type.isBool())
+        << "op->type is " << op->type;
     value = Builder->CreateICmpNE(a, b);
   }
 }
@@ -826,7 +864,7 @@ void CodeGen_LLVM::visit(const While* op) {
   Builder->SetInsertPoint(loop);
   codegen(op->contents);
 
-  // create unconditional branch to header 
+  // create unconditional branch to header
   Builder->CreateBr(header);
 
   // set the insert point for the exit loop
@@ -1060,7 +1098,7 @@ void CodeGen_LLVM::visit(const GetProperty* op) {
     case TensorProperty::Indices: {
       auto* mode = get_int_constant(32, op->mode, *this->Context);
       auto* index = get_int_constant(32, op->index, *this->Context);
-
+    
       auto get_indices_fn = getOrInsertGetIndicesFunction();
       value = Builder->CreateCall(get_indices_fn, {tensor, mode, index});
       break;
