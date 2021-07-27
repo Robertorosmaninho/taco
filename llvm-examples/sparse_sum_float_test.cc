@@ -6,7 +6,7 @@ using namespace taco;
 
 int main() {
     // Create formats
-    Format list({Sparse});
+    Format list({Dense});
 
     // Create tensofloatr
     Tensor<float> A({3}, list);
@@ -14,14 +14,14 @@ int main() {
     Tensor<float> C({3}, list);
 
     // Insert data into B
-    B.insert({0}, (float) 1.5);
-    B.insert({1}, (float) 2.5);
-    B.insert({2}, (float) 3.5);
+    B.insert({0}, (float) 1.2);
+    B.insert({1}, (float) 2.3);
+    B.insert({2}, (float) 3.4);
 
     // Insert data into C
     C.insert({0}, (float) 4.5);
-    C.insert({1}, (float) 5.5);
-    C.insert({2}, (float) 6.5);
+    C.insert({1}, (float) 5.6);
+    C.insert({2}, (float) 6.7);
 
 
     // Pack inserted data as described by the formats
