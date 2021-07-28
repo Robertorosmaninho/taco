@@ -24,7 +24,7 @@ int main() {
   C.insert({1}, (int32_t) 5);
   C.insert({2}, (int32_t) 6);
 
-  // Insert data into C
+  // Insert data into D
   D.insert({0}, (int32_t) 7);
   D.insert({1}, (int32_t) 8);
   D.insert({2}, (int32_t) 9);

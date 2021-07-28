@@ -15,12 +15,12 @@ int main() {
 
   // Insert data into B
   B.insert({0}, (int32_t) 4);
-  B.insert({1}, (int32_t) 5);
-  B.insert({2}, (int32_t) 6);
+  B.insert({1}, (int32_t) 6);
+  B.insert({2}, (int32_t) 8);
 
-  C.insert({0}, (int32_t) 1);
-  C.insert({1}, (int32_t) 2);
-  C.insert({2}, (int32_t) 3);
+  C.insert({0}, (int32_t) 2);
+  C.insert({1}, (int32_t) 3);
+  C.insert({2}, (int32_t) 4);
 
   // Pack inserted data as described by the formats
   B.pack();

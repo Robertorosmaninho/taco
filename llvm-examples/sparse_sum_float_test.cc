@@ -6,7 +6,7 @@ using namespace taco;
 
 int main() {
     // Create formats
-    Format list({Dense});
+    Format list({Sparse});
 
     // Create tensofloatr
     Tensor<float> A({3}, list);

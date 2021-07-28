@@ -1098,7 +1098,6 @@ void CodeGen_LLVM::visit(const GetProperty* op) {
     case TensorProperty::Indices: {
       auto* mode = get_int_constant(32, op->mode, *this->Context);
       auto* index = get_int_constant(32, op->index, *this->Context);
-    
       auto get_indices_fn = getOrInsertGetIndicesFunction();
       value = Builder->CreateCall(get_indices_fn, {tensor, mode, index});
       break;
